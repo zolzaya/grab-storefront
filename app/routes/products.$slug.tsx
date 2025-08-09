@@ -13,7 +13,7 @@ export const meta: MetaFunction<typeof loader> = ({ data }) => {
   ]
 }
 
-export async function loader({ params }: LoaderFunctionArgs) {
+export async function loader({ params, request }: LoaderFunctionArgs) {
   const { slug } = params
 
   if (!slug) {
@@ -23,7 +23,8 @@ export async function loader({ params }: LoaderFunctionArgs) {
   try {
     const { product } = await shopApiRequest<{ product: Product | null }>(
       GET_PRODUCT,
-      { slug }
+      { slug },
+      request
     )
 
     if (!product) {
@@ -49,7 +50,8 @@ export async function action({ request }: ActionFunctionArgs) {
   try {
     const result = await shopApiRequest<AddItemToOrderResult>(
       ADD_ITEM_TO_ORDER,
-      { productVariantId, quantity }
+      { productVariantId, quantity },
+      request
     )
 
     if ('errorCode' in result.addItemToOrder) {

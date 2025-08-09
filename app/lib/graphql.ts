@@ -2,19 +2,55 @@ import { GraphQLClient } from 'graphql-request'
 
 const VENDURE_SHOP_API_URL = process.env.VENDURE_SHOP_API_URL || 'http://localhost:3000/shop-api'
 
-export const graphQLClient = new GraphQLClient(VENDURE_SHOP_API_URL, {
-  credentials: 'include',
-  headers: {
+// Create a client factory to handle both server-side and client-side requests
+export const createGraphQLClient = (request?: Request) => {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-  },
-})
+  }
+  
+  // Forward cookies from the incoming request for server-side requests
+  if (request && typeof window === 'undefined') {
+    const cookie = request.headers.get('cookie')
+    if (cookie) {
+      headers.cookie = cookie
+    }
+  }
+  
+  return new GraphQLClient(VENDURE_SHOP_API_URL, {
+    credentials: 'include',
+    headers,
+  })
+}
 
-export const shopApiRequest = async <T>(query: string, variables?: any): Promise<T> => {
+// Default client for client-side requests
+export const graphQLClient = createGraphQLClient()
+
+export const shopApiRequest = async <T>(
+  query: string, 
+  variables?: any, 
+  request?: Request
+): Promise<T> => {
   try {
-    const data = await graphQLClient.request<T>(query, variables)
+    const client = request ? createGraphQLClient(request) : graphQLClient
+    
+    // Log request details for debugging
+    if (typeof window === 'undefined') {
+      console.log('Server-side GraphQL request:', {
+        hasRequest: !!request,
+        cookies: request?.headers.get('cookie') ? 'present' : 'none',
+        url: VENDURE_SHOP_API_URL
+      })
+    }
+    
+    const data = await client.request<T>(query, variables)
     return data
   } catch (error) {
-    console.error('GraphQL request error:', error)
+    console.error('GraphQL request error:', {
+      error,
+      url: VENDURE_SHOP_API_URL,
+      variables,
+      hasRequest: !!request
+    })
     throw error
   }
 }

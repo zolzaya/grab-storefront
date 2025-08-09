@@ -15,7 +15,9 @@ export const meta: MetaFunction = () => {
 export async function loader({ request }: LoaderFunctionArgs) {
   try {
     const { activeOrder } = await shopApiRequest<{ activeOrder: Order | null }>(
-      GET_ACTIVE_ORDER
+      GET_ACTIVE_ORDER,
+      undefined,
+      request
     )
 
     return ({ activeOrder })
@@ -34,7 +36,8 @@ export async function action({ request }: ActionFunctionArgs) {
       const orderLineId = formData.get("orderLineId") as string
       const result = await shopApiRequest<RemoveOrderLineResult>(
         REMOVE_ORDER_LINE,
-        { orderLineId }
+        { orderLineId },
+        request
       )
 
       if ('errorCode' in result.removeOrderLine) {
@@ -54,7 +57,8 @@ export async function action({ request }: ActionFunctionArgs) {
 
       const result = await shopApiRequest<AdjustOrderLineResult>(
         ADJUST_ORDER_LINE,
-        { orderLineId, quantity }
+        { orderLineId, quantity },
+        request
       )
 
       if ('errorCode' in result.adjustOrderLine) {

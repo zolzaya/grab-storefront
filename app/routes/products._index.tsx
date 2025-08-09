@@ -59,7 +59,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
     const { products } = await shopApiRequest<{ products: ProductList }>(
       GET_PRODUCTS,
-      { options }
+      { options },
+      request
     );
     
     return ({ 

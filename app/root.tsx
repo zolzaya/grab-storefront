@@ -31,7 +31,9 @@ export const links: LinksFunction = () => [
 export async function loader({ request }: LoaderFunctionArgs) {
   try {
     const { activeOrder } = await shopApiRequest<{ activeOrder: Order | null }>(
-      GET_ACTIVE_ORDER
+      GET_ACTIVE_ORDER,
+      undefined,
+      request
     );
     
     return { activeOrder };
