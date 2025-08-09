@@ -1,11 +1,11 @@
 # Vendure Storefront
 
-A modern ecommerce storefront built with Remix and Storefront UI, designed to work with Vendure backend.
+A modern ecommerce storefront built with Remix, designed to work with Vendure backend.
 
 ## Tech Stack
 
 - **Framework**: Remix (React Router v7)
-- **UI Library**: Storefront UI (React components)
+- **UI Library**: Custom React components with Tailwind CSS
 - **Styling**: Tailwind CSS
 - **GraphQL Client**: graphql-request
 - **Backend**: Vendure ecommerce backend
@@ -17,7 +17,7 @@ A modern ecommerce storefront built with Remix and Storefront UI, designed to wo
 - 📱 Responsive product detail pages with image galleries
 - 🛒 Shopping cart functionality (add, remove, adjust quantities)
 - 📂 Collection browsing
-- 🎨 Beautiful UI components from Storefront UI
+- 🎨 Beautiful custom UI components with Tailwind CSS
 - ⚡ Fast loading with Remix's SSR and data loading
 - 🔍 SEO-friendly with proper meta tags
 
@@ -95,7 +95,7 @@ The storefront connects to your Vendure backend using GraphQL queries for:
 
 ### Styling
 - Tailwind CSS classes can be customized in `tailwind.config.ts`
-- Storefront UI components can be themed and customized
+- Custom UI components can be themed and customized
 - Global styles are in `app/tailwind.css`
 
 ### Backend Integration
@@ -104,7 +104,7 @@ The storefront connects to your Vendure backend using GraphQL queries for:
 - TypeScript types match Vendure's GraphQL schema
 
 ### Components
-- All UI components use Storefront UI for consistency
+- All UI components follow consistent design patterns
 - Components are in `app/components/` and can be customized
 - Layout components (Header/Footer) include navigation and branding
 

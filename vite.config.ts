@@ -21,12 +21,6 @@ export default defineConfig({
     }),
     tsconfigPaths(),
   ],
-  optimizeDeps: {
-    include: ['react-use'],
-  },
-  ssr: {
-    noExternal: ['@storefront-ui/react', 'react-use'],
-  },
   define: {
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
   },

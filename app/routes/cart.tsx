@@ -1,88 +1,87 @@
-import type { MetaFunction, LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
+import type { MetaFunction, LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node"
 
-import { useLoaderData, useActionData, Form, Link } from "@remix-run/react";
-import { SfButton, SfIconDelete } from "@storefront-ui/react";
-import { shopApiRequest } from "~/lib/graphql";
-import { GET_ACTIVE_ORDER, REMOVE_ORDER_LINE, ADJUST_ORDER_LINE } from "~/lib/queries";
-import { Order, RemoveOrderLineResult, AdjustOrderLineResult } from "~/lib/types";
+import { useLoaderData, useActionData, Form, Link } from "@remix-run/react"
+import { shopApiRequest } from "~/lib/graphql"
+import { GET_ACTIVE_ORDER, REMOVE_ORDER_LINE, ADJUST_ORDER_LINE } from "~/lib/queries"
+import { Order, RemoveOrderLineResult, AdjustOrderLineResult } from "~/lib/types"
 
 export const meta: MetaFunction = () => {
   return [
     { title: "Shopping Cart - Your Store" },
     { name: "description", content: "Review your shopping cart" },
-  ];
-};
+  ]
+}
 
 export async function loader({ request }: LoaderFunctionArgs) {
   try {
     const { activeOrder } = await shopApiRequest<{ activeOrder: Order | null }>(
       GET_ACTIVE_ORDER
-    );
-    
-    return ({ activeOrder });
+    )
+
+    return ({ activeOrder })
   } catch (error) {
-    console.error('Failed to load cart:', error);
-    return ({ activeOrder: null });
+    console.error('Failed to load cart:', error)
+    return ({ activeOrder: null })
   }
 }
 
 export async function action({ request }: ActionFunctionArgs) {
-  const formData = await request.formData();
-  const action = formData.get("_action") as string;
+  const formData = await request.formData()
+  const action = formData.get("_action") as string
 
   try {
     if (action === "remove") {
-      const orderLineId = formData.get("orderLineId") as string;
+      const orderLineId = formData.get("orderLineId") as string
       const result = await shopApiRequest<RemoveOrderLineResult>(
         REMOVE_ORDER_LINE,
         { orderLineId }
-      );
+      )
 
       if ('errorCode' in result.removeOrderLine) {
-        return ({ error: result.removeOrderLine.message });
+        return ({ error: result.removeOrderLine.message })
       }
 
-      return ({ success: true, order: result.removeOrderLine });
-    } 
-    
+      return ({ success: true, order: result.removeOrderLine })
+    }
+
     if (action === "adjust") {
-      const orderLineId = formData.get("orderLineId") as string;
-      const quantity = parseInt(formData.get("quantity") as string);
+      const orderLineId = formData.get("orderLineId") as string
+      const quantity = parseInt(formData.get("quantity") as string)
 
       if (quantity < 1) {
-        return ({ error: "Quantity must be at least 1" });
+        return ({ error: "Quantity must be at least 1" })
       }
 
       const result = await shopApiRequest<AdjustOrderLineResult>(
         ADJUST_ORDER_LINE,
         { orderLineId, quantity }
-      );
+      )
 
       if ('errorCode' in result.adjustOrderLine) {
-        return ({ error: result.adjustOrderLine.message });
+        return ({ error: result.adjustOrderLine.message })
       }
 
-      return ({ success: true, order: result.adjustOrderLine });
+      return ({ success: true, order: result.adjustOrderLine })
     }
 
-    return ({ error: "Invalid action" });
+    return ({ error: "Invalid action" })
   } catch (error) {
-    console.error('Cart action failed:', error);
-    return ({ error: "Action failed. Please try again." });
+    console.error('Cart action failed:', error)
+    return ({ error: "Action failed. Please try again." })
   }
 }
 
 export default function Cart() {
-  const { activeOrder } = useLoaderData<typeof loader>();
-  const actionData = useActionData<typeof action>();
+  const { activeOrder } = useLoaderData<typeof loader>()
+  const actionData = useActionData<typeof action>()
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 2,
-    }).format(price / 100);
-  };
+    }).format(price / 100)
+  }
 
   if (!activeOrder || activeOrder.lines.length === 0) {
     return (
@@ -91,11 +90,11 @@ export default function Cart() {
           <h1 className="text-3xl font-bold text-gray-900 mb-4">Your Cart</h1>
           <p className="text-gray-600 mb-8">Your cart is empty</p>
           <Link to="/products">
-            <SfButton size="lg">Continue Shopping</SfButton>
+            Continue Shopping
           </Link>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -139,7 +138,7 @@ export default function Cart() {
 
               {/* Product Details */}
               <div className="flex-1 min-w-0">
-                <Link 
+                <Link
                   to={`/products/${line.productVariant.product.slug}`}
                   className="text-lg font-medium text-gray-900 hover:text-blue-600"
                 >
@@ -197,7 +196,6 @@ export default function Cart() {
                     className="p-2 text-red-600 hover:text-red-800"
                     title="Remove item"
                   >
-                    <SfIconDelete />
                   </button>
                 </Form>
               </div>
@@ -213,19 +211,15 @@ export default function Cart() {
               {formatPrice(activeOrder.totalWithTax)}
             </span>
           </div>
-          
+
           <div className="flex flex-col sm:flex-row gap-4 justify-end">
             <Link to="/products">
-              <SfButton variant="secondary" size="lg">
-                Continue Shopping
-              </SfButton>
+              Continue Shopping
             </Link>
-            <SfButton size="lg">
-              Proceed to Checkout
-            </SfButton>
+            Proceed to Checkout
           </div>
         </div>
       </div>
     </div>
-  );
+  )
 }

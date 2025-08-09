@@ -11,7 +11,7 @@ describe('Footer', () => {
   it('renders store name and description', () => {
     renderWithRouter(<Footer />)
     expect(screen.getByText('Your Store')).toBeInTheDocument()
-    expect(screen.getByText('Your one-stop shop for quality products. Built with Vendure and Storefront UI.')).toBeInTheDocument()
+    expect(screen.getByText('Your one-stop shop for quality products. Built with Vendure.')).toBeInTheDocument()
   })
 
   it('renders shop section links', () => {
