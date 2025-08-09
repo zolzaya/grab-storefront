@@ -118,11 +118,10 @@ export default function ProductDetail() {
                       <button
                         key={image.id}
                         onClick={() => setSelectedImageIndex(index)}
-                        className={`flex-shrink-0 w-24 h-24 rounded-2xl overflow-hidden border-3 transition-all duration-200 hover:scale-105 ${
-                          index === selectedImageIndex 
-                            ? 'border-brand-500 shadow-medium scale-105' 
-                            : 'border-neutral-200 hover:border-brand-300'
-                        }`}
+                        className={`flex-shrink-0 w-24 h-24 rounded-2xl overflow-hidden border-3 transition-all duration-200 hover:scale-105 ${index === selectedImageIndex
+                          ? 'border-brand-500 shadow-medium scale-105'
+                          : 'border-neutral-200 hover:border-brand-300'
+                          }`}
                       >
                         <img
                           src={image.preview + '?preset=thumb'}
@@ -153,7 +152,7 @@ export default function ProductDetail() {
           </div>
 
           {/* Product Info */}
-          <div className="animate-fade-in-up" style={{animationDelay: '0.1s'}}>
+          <div className="animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
             {/* Breadcrumb */}
             <nav className="flex mb-8" aria-label="Breadcrumb">
               <ol className="flex items-center space-x-2 text-sm">
@@ -194,13 +193,12 @@ export default function ProductDetail() {
                     </div>
                   )}
                 </div>
-                
+
                 {/* Stock Status Badge */}
-                <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold border-2 ${
-                  isOutOfStock
-                    ? 'bg-error-50 text-error-800 border-error-200'
-                    : 'bg-success-50 text-success-800 border-success-200'
-                }`}>
+                <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold border-2 ${isOutOfStock
+                  ? 'bg-error-50 text-error-800 border-error-200'
+                  : 'bg-success-50 text-success-800 border-success-200'
+                  }`}>
                   <svg className={`w-4 h-4 mr-2 ${isOutOfStock ? 'text-error-600' : 'text-success-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     {isOutOfStock ? (
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -208,10 +206,10 @@ export default function ProductDetail() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     )}
                   </svg>
-                  {isOutOfStock ? 'Out of Stock' : `${selectedVariant?.stockLevel} In Stock`}
+                  {isOutOfStock ? 'Out of Stock' : `In Stock`}
                 </div>
               </div>
-              <p className="text-neutral-600">Price includes tax and shipping</p>
+              {/* <p className="text-neutral-600">Price includes tax and shipping</p> */}
             </div>
 
 
@@ -297,7 +295,7 @@ export default function ProductDetail() {
                       </>
                     )}
                   </button>
-                  
+
                   {/* Wishlist Button */}
                   <button
                     type="button"
