@@ -241,7 +241,7 @@ export default function ProductDetail() {
               {/* Quantity, Add to Cart, and Wishlist in same row */}
               <div>
                 <label className="block text-lg font-semibold text-neutral-900 mb-4">
-                  Quantity & Actions
+                  Quantity
                 </label>
                 <div className="flex items-center space-x-4">
                   {/* Quantity Controls */}

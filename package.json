@@ -18,6 +18,8 @@
     "@remix-run/node": "^2.17.0",
     "@remix-run/react": "^2.17.0",
     "@remix-run/serve": "^2.17.0",
+    "@rvf/remix": "^6.3.0",
+    "@rvf/zod": "^7.0.3",
     "@tailwindcss/line-clamp": "^0.4.4",
     "@vendure/common": "^3.4.0",
     "clsx": "^2.1.1",
@@ -25,7 +27,8 @@
     "graphql-request": "^7.2.0",
     "isbot": "^4.1.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "zod": "^4.0.16"
   },
   "devDependencies": {
     "@remix-run/dev": "^2.17.0",

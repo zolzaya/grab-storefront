@@ -3,8 +3,8 @@ import { redirect } from "@remix-run/node"
 import { useLoaderData, useActionData, Form, useNavigation, Link } from "@remix-run/react"
 import { useState } from "react"
 import { shopApiRequest } from "~/lib/graphql"
-import { 
-  GET_ACTIVE_ORDER, 
+import {
+  GET_ACTIVE_ORDER,
   ELIGIBLE_SHIPPING_METHODS,
   ELIGIBLE_PAYMENT_METHODS,
   SET_CUSTOMER_FOR_ORDER,
@@ -64,7 +64,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   try {
     // Get active order
     const { activeOrder } = await shopApiRequest<{ activeOrder: { lines: unknown[]; customer?: { id: string } } | null }>(GET_ACTIVE_ORDER, undefined, request)
-    
+
     if (!activeOrder || activeOrder.lines.length === 0) {
       // If we're in thank-you step and no active order, try to get order by code
       if (step === 'thank-you' && orderCode) {
@@ -77,9 +77,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
               { options: { take: 6, sort: { createdAt: "DESC" } } },
               request
             )
-            
+
             const orderProductNames = orderByCode.lines.map((line: any) => line.productVariant.product.name)
-            const upsellProducts = products.items.filter(product => 
+            const upsellProducts = products.items.filter(product =>
               !orderProductNames.includes(product.name)
             ).slice(0, 3)
 
@@ -137,7 +137,7 @@ export async function action({ request }: ActionFunctionArgs) {
     if (action === "set-customer") {
       // Check if customer is already set on the order
       const { activeOrder } = await shopApiRequest<{ activeOrder: { customer?: { id: string } } }>(GET_ACTIVE_ORDER, undefined, request)
-      
+
       if (activeOrder?.customer) {
         // Customer already exists, skip to shipping
         return { success: true, step: 'shipping' }
@@ -181,7 +181,6 @@ export async function action({ request }: ActionFunctionArgs) {
         streetLine2: formData.get("streetLine2"),
         city: formData.get("city"),
         province: formData.get("province"),
-        postalCode: formData.get("postalCode"),
         countryCode: formData.get("countryCode"),
         phoneNumber: formData.get("phoneNumber")
       }
@@ -226,25 +225,25 @@ export async function action({ request }: ActionFunctionArgs) {
     if (action === "add-payment") {
       try {
         // First, verify we still have an active order with all required data
-        const { activeOrder: currentOrder } = await shopApiRequest<{ 
-          activeOrder: { 
-            id: string; 
-            code: string; 
-            state: string; 
-            totalWithTax?: number;
-            shippingAddress?: { 
-              fullName?: string;
-              streetLine1: string;
-              streetLine2?: string;
-              city?: string;
-              province?: string;
-              postalCode?: string;
-              countryCode?: string;
-              phoneNumber?: string;
-            };
-            shippingLines?: { shippingMethod: { id: string } }[];
-            customer?: { id: string };
-          } | null 
+        const { activeOrder: currentOrder } = await shopApiRequest<{
+          activeOrder: {
+            id: string
+            code: string
+            state: string
+            totalWithTax?: number
+            shippingAddress?: {
+              fullName?: string
+              streetLine1: string
+              streetLine2?: string
+              city?: string
+              province?: string
+              postalCode?: string
+              countryCode?: string
+              phoneNumber?: string
+            }
+            shippingLines?: { shippingMethod: { id: string } }[]
+            customer?: { id: string }
+          } | null
         }>(
           GET_ACTIVE_ORDER,
           undefined,
@@ -284,7 +283,7 @@ export async function action({ request }: ActionFunctionArgs) {
         // Transition to ArrangingPayment if still in AddingItems state
         if (currentOrder.state === "AddingItems") {
           console.log('Transitioning from AddingItems to ArrangingPayment...')
-          
+
           // First, ensure billing address is set (use shipping address as billing address)
           try {
             console.log('Setting billing address same as shipping address...')
@@ -297,7 +296,6 @@ export async function action({ request }: ActionFunctionArgs) {
                   streetLine2: currentOrder.shippingAddress?.streetLine2 || "",
                   city: currentOrder.shippingAddress?.city || "",
                   province: currentOrder.shippingAddress?.province || "",
-                  postalCode: currentOrder.shippingAddress?.postalCode || "",
                   countryCode: currentOrder.shippingAddress?.countryCode || "US",
                   phoneNumber: currentOrder.shippingAddress?.phoneNumber || ""
                 }
@@ -361,7 +359,7 @@ export async function action({ request }: ActionFunctionArgs) {
         const paymentResult = result.addPaymentToOrder as { errorCode?: string; message?: string; paymentErrorMessage?: string } | unknown
         if (paymentResult && typeof paymentResult === 'object' && 'errorCode' in paymentResult) {
           const errorResult = paymentResult as { errorCode: string; message?: string; paymentErrorMessage?: string }
-          return { 
+          return {
             error: errorResult.paymentErrorMessage || errorResult.message || `Payment failed: ${errorResult.errorCode}`
           }
         }
@@ -375,18 +373,18 @@ export async function action({ request }: ActionFunctionArgs) {
 
         // Get final order state
         const { orderByCode } = await shopApiRequest<{ orderByCode: any }>(GET_ORDER_BY_CODE, { code: currentOrder.code }, request)
-        
+
         const orderProductNames = orderByCode?.lines?.map((line: any) => line.productVariant.product.name) || []
-        const upsellProducts = products.items.filter(product => 
+        const upsellProducts = products.items.filter(product =>
           !orderProductNames.includes(product.name)
         ).slice(0, 3)
 
         const customerName = orderByCode?.customer?.firstName || orderByCode?.customer?.emailAddress?.split('@')[0] || 'Valued Customer'
 
         // After successful payment, move to thank-you step
-        return { 
-          success: true, 
-          step: 'thank-you', 
+        return {
+          success: true,
+          step: 'thank-you',
           orderCode: currentOrder.code,
           completedOrder: orderByCode,
           upsellProducts,
@@ -404,7 +402,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
     if (action === "add-upsell") {
       const productVariantId = formData.get("productVariantId") as string
-      
+
       try {
         const result = await shopApiRequest<any>(ADD_ITEM_TO_ORDER, {
           productVariantId,
@@ -433,7 +431,7 @@ export default function Checkout() {
   const { activeOrder, completedOrder, upsellProducts, customerName, shippingMethods, paymentMethods, hasCustomer } = useLoaderData<typeof loader>()
   const actionData = useActionData<typeof action>()
   const navigation = useNavigation()
-  
+
   // Determine initial step based on whether customer is already set
   const initialStep = hasCustomer ? 'shipping' : 'customer'
   const [currentStep, setCurrentStep] = useState(initialStep)
@@ -473,13 +471,12 @@ export default function Checkout() {
               {steps.map((step, index) => {
                 const isActive = step.id === currentStep
                 const isCompleted = steps.findIndex(s => s.id === currentStep) > index
-                
+
                 return (
-                  <div key={step.id} className={`flex items-center space-x-2 px-4 py-2 rounded-xl whitespace-nowrap ${
-                    isActive ? 'bg-brand-100 text-brand-800' : 
-                    isCompleted ? 'bg-success-100 text-success-800' : 
-                    'bg-neutral-100 text-neutral-600'
-                  }`}>
+                  <div key={step.id} className={`flex items-center space-x-2 px-4 py-2 rounded-xl whitespace-nowrap ${isActive ? 'bg-brand-100 text-brand-800' :
+                    isCompleted ? 'bg-success-100 text-success-800' :
+                      'bg-neutral-100 text-neutral-600'
+                    }`}>
                     <span className="text-lg">{step.icon}</span>
                     <span className="font-medium">{step.name}</span>
                   </div>
@@ -530,8 +527,8 @@ export default function Checkout() {
 
               {/* Thank You Step */}
               {currentStep === 'thank-you' && (
-                <ThankYouStep 
-                  order={actionData?.completedOrder || completedOrder || activeOrder} 
+                <ThankYouStep
+                  order={actionData?.completedOrder || completedOrder || activeOrder}
                   upsellProducts={actionData?.upsellProducts || upsellProducts}
                   customerName={actionData?.customerName || customerName}
                   isSubmitting={isSubmitting}
@@ -558,7 +555,7 @@ function CustomerForm({ isSubmitting }: { isSubmitting: boolean }) {
       <h2 className="text-2xl font-bold text-neutral-900 mb-6">Customer Information</h2>
       <Form method="post" className="space-y-6">
         <input type="hidden" name="_action" value="set-customer" />
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label htmlFor="firstName" className="block text-sm font-medium text-neutral-700 mb-2">
@@ -572,7 +569,7 @@ function CustomerForm({ isSubmitting }: { isSubmitting: boolean }) {
               className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
             />
           </div>
-          
+
           <div>
             <label htmlFor="lastName" className="block text-sm font-medium text-neutral-700 mb-2">
               Last Name *
@@ -618,7 +615,7 @@ function ShippingAddressForm({ isSubmitting }: { isSubmitting: boolean }) {
       <h2 className="text-2xl font-bold text-neutral-900 mb-6">Shipping Address</h2>
       <Form method="post" className="space-y-6">
         <input type="hidden" name="_action" value="set-shipping-address" />
-        
+
         <div>
           <label htmlFor="fullName" className="block text-sm font-medium text-neutral-700 mb-2">
             Full Name *
@@ -657,7 +654,7 @@ function ShippingAddressForm({ isSubmitting }: { isSubmitting: boolean }) {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label htmlFor="city" className="block text-sm font-medium text-neutral-700 mb-2">
               City *
@@ -670,7 +667,7 @@ function ShippingAddressForm({ isSubmitting }: { isSubmitting: boolean }) {
               className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
             />
           </div>
-          
+
           <div>
             <label htmlFor="province" className="block text-sm font-medium text-neutral-700 mb-2">
               State/Province
@@ -679,18 +676,6 @@ function ShippingAddressForm({ isSubmitting }: { isSubmitting: boolean }) {
               type="text"
               id="province"
               name="province"
-              className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="postalCode" className="block text-sm font-medium text-neutral-700 mb-2">
-              Postal Code
-            </label>
-            <input
-              type="text"
-              id="postalCode"
-              name="postalCode"
               className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
             />
           </div>
@@ -746,7 +731,7 @@ function ShippingMethodForm({ shippingMethods, isSubmitting }: { shippingMethods
       <h2 className="text-2xl font-bold text-neutral-900 mb-6">Shipping Method</h2>
       <Form method="post" className="space-y-6">
         <input type="hidden" name="_action" value="set-shipping-method" />
-        
+
         <div className="space-y-4">
           {shippingMethods.map((method) => (
             <div key={method.id} className="flex items-center p-4 border border-neutral-200 rounded-xl hover:bg-neutral-50 cursor-pointer transition-colors">
@@ -793,7 +778,7 @@ function PaymentForm({ paymentMethods, isSubmitting }: { paymentMethods: Payment
       <h2 className="text-2xl font-bold text-neutral-900 mb-6">Payment</h2>
       <Form method="post" className="space-y-6">
         <input type="hidden" name="_action" value="add-payment" />
-        
+
         <div className="space-y-4">
           {paymentMethods.filter(method => method.isEligible).map((method) => (
             <div key={method.id} className="flex items-center p-4 border border-neutral-200 rounded-xl hover:bg-neutral-50 cursor-pointer transition-colors">
@@ -832,11 +817,11 @@ function PaymentForm({ paymentMethods, isSubmitting }: { paymentMethods: Payment
   )
 }
 
-function ThankYouStep({ order, upsellProducts, customerName, isSubmitting }: { 
-  order: any, 
-  upsellProducts: Product[], 
+function ThankYouStep({ order, upsellProducts, customerName, isSubmitting }: {
+  order: any,
+  upsellProducts: Product[],
   customerName: string,
-  isSubmitting: boolean 
+  isSubmitting: boolean
 }) {
   if (!order) return null
 
@@ -849,7 +834,7 @@ function ThankYouStep({ order, upsellProducts, customerName, isSubmitting }: {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        
+
         <h1 className="text-4xl md:text-5xl font-bold text-neutral-900 mb-6">
           Thank You, {customerName}! 🎉
         </h1>
@@ -866,7 +851,7 @@ function ThankYouStep({ order, upsellProducts, customerName, isSubmitting }: {
         <div className="lg:col-span-2">
           <div className="bg-neutral-50 rounded-2xl p-6 mb-8">
             <h2 className="text-2xl font-bold text-neutral-900 mb-6">Your Order Details</h2>
-            
+
             <div className="space-y-4">
               {order.lines.map((line: any, index: number) => (
                 <div key={line.id} className="flex items-center space-x-4 p-4 bg-white rounded-xl shadow-soft">
@@ -917,7 +902,7 @@ function ThankYouStep({ order, upsellProducts, customerName, isSubmitting }: {
                 <h4 className="font-bold text-neutral-900 mb-2">Email Confirmation</h4>
                 <p className="text-sm text-neutral-600">Check your email for order details</p>
               </div>
-              
+
               <div className="text-center p-4 bg-warning-50 rounded-xl">
                 <div className="w-12 h-12 bg-warning-500 rounded-xl flex items-center justify-center mx-auto mb-3">
                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -927,7 +912,7 @@ function ThankYouStep({ order, upsellProducts, customerName, isSubmitting }: {
                 <h4 className="font-bold text-neutral-900 mb-2">Processing</h4>
                 <p className="text-sm text-neutral-600">We&apos;re preparing your order</p>
               </div>
-              
+
               <div className="text-center p-4 bg-success-50 rounded-xl">
                 <div className="w-12 h-12 bg-success-500 rounded-xl flex items-center justify-center mx-auto mb-3">
                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1012,7 +997,7 @@ function ThankYouStep({ order, upsellProducts, customerName, isSubmitting }: {
                     Continue Shopping
                   </button>
                 </Link>
-                
+
                 <Link to="/" className="block w-full mt-3">
                   <button className="w-full bg-white text-neutral-900 py-3 px-4 rounded-xl font-semibold border-2 border-neutral-300 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 transition-all duration-300 shadow-soft hover:shadow-medium">
                     Back to Home
@@ -1036,40 +1021,8 @@ function OrderSummary({ activeOrder }: { activeOrder: any }) {
         </div>
 
         <div className="p-8 space-y-6">
-          {/* Items */}
-          <div className="space-y-4">
-            {activeOrder.lines.map((line: any) => (
-              <div key={line.id} className="flex items-center space-x-4">
-                <div className="flex-shrink-0">
-                  {line.productVariant.product.featuredAsset ? (
-                    <img
-                      src={line.productVariant.product.featuredAsset.preview + '?preset=thumb'}
-                      alt={line.productVariant.product.name}
-                      className="w-16 h-16 object-cover rounded-xl"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 bg-gradient-to-br from-neutral-100 to-neutral-200 rounded-xl flex items-center justify-center">
-                      <svg className="w-6 h-6 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-neutral-900 truncate">
-                    {line.productVariant.product.name}
-                  </h4>
-                  <p className="text-sm text-neutral-600">Qty: {line.quantity}</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold text-neutral-900">{formatPrice(line.linePriceWithTax)}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
           {/* Totals */}
-          <div className="border-t border-neutral-200 pt-6 space-y-4">
+          <div className="space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-neutral-600">Subtotal</span>
               <span className="font-bold text-neutral-900">{formatPrice(activeOrder.total)}</span>

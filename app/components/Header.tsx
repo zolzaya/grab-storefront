@@ -56,7 +56,7 @@ export function Header({ activeOrder }: HeaderProps) {
                 to="/"
                 className="text-2xl font-bold text-neutral-900 tracking-tight hover:text-brand-600 transition-colors duration-200"
               >
-                VENDURE
+                grab.mn
               </Link>
             </div>
 
