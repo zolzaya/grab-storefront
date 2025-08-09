@@ -6,6 +6,8 @@ import { TrustBadges } from "../components/cart/TrustBadges"
 import { shopApiRequest } from "~/lib/graphql"
 import { GET_ACTIVE_ORDER, REMOVE_ORDER_LINE, ADJUST_ORDER_LINE } from "~/lib/queries"
 import { Order, RemoveOrderLineResult, AdjustOrderLineResult } from "~/lib/types"
+import { FreeShippingBanner } from "~/components/cart/FreeShipping"
+import { formatPrice } from "~/utils/utils"
 
 export const meta: MetaFunction = () => {
   return [
@@ -81,14 +83,6 @@ export default function Cart() {
   const { activeOrder } = useLoaderData<typeof loader>()
   const actionData = useActionData<typeof action>()
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-    }).format(price / 100)
-  }
-
   if (!activeOrder || activeOrder.lines.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-white">
@@ -158,7 +152,7 @@ export default function Cart() {
                   <svg className="w-6 h-6 mr-3 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l-1 9H6l-1-9z" />
                   </svg>
-                  Cart Items ({activeOrder.totalQuantity})
+                  Бүтээгдэхүүн ({activeOrder.totalQuantity})
                 </h2>
               </div>
 
@@ -314,7 +308,7 @@ export default function Cart() {
                             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
-                            Remove Item
+                            Хасах
                           </button>
                         </Form>
                       </div>
@@ -334,7 +328,7 @@ export default function Cart() {
                     <svg className="w-6 h-6 mr-3 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                     </svg>
-                    Order Summary
+                    Төлбөрийн мэдээлэл
                   </h3>
                 </div>
 
@@ -342,25 +336,16 @@ export default function Cart() {
                   {/* Order Details */}
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
-                      <span className="text-neutral-600">Subtotal ({activeOrder.totalQuantity} {activeOrder.totalQuantity === 1 ? 'item' : 'items'})</span>
+                      <span className="text-neutral-600">Нийт</span>
                       <span className="font-bold text-neutral-900">{formatPrice(activeOrder.total)}</span>
                     </div>
 
                     <div className="flex justify-between items-center">
-                      <span className="text-neutral-600">Tax</span>
+                      <span className="text-neutral-600">Хүргэлт</span>
                       <span className="font-bold text-neutral-900">
-                        {formatPrice(activeOrder.totalWithTax - activeOrder.total)}
+                        {formatPrice(activeOrder?.shippingWithTax || 0)}
                       </span>
                     </div>
-
-                    {activeOrder.shippingWithTax && (
-                      <div className="flex justify-between items-center">
-                        <span className="text-neutral-600">Shipping</span>
-                        <span className="font-bold text-neutral-900">
-                          {formatPrice(activeOrder.shippingWithTax)}
-                        </span>
-                      </div>
-                    )}
                   </div>
 
                   {/* Divider */}
@@ -368,39 +353,29 @@ export default function Cart() {
 
                   {/* Total */}
                   <div className="flex justify-between items-center">
-                    <span className="text-xl font-bold text-neutral-900">Total</span>
+                    <span className="text-xl font-bold text-neutral-900">Нийт төлөх дүн</span>
                     <span className="text-3xl font-bold text-neutral-900">
                       {formatPrice(activeOrder.totalWithTax + (activeOrder.shippingWithTax || 0))}
                     </span>
                   </div>
 
                   {/* Shipping Banner */}
-                  <div className="bg-success-50 border border-success-200 rounded-2xl p-4">
-                    <div className="flex items-center">
-                      <svg className="w-5 h-5 text-success-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                      </svg>
-                      <div>
-                        <p className="text-sm font-semibold text-success-800">Free Shipping!</p>
-                        <p className="text-xs text-success-600">Your order qualifies for free shipping</p>
-                      </div>
-                    </div>
-                  </div>
+                  {activeOrder.totalWithTax >= 100_000 && <FreeShippingBanner />}
 
                   {/* Action Buttons */}
                   <div className="space-y-4">
                     <button className="w-full bg-gradient-to-r from-neutral-900 to-neutral-800 text-white py-4 px-6 rounded-2xl font-bold text-lg hover:from-neutral-800 hover:to-neutral-700 transition-all duration-300 shadow-large hover:shadow-xl transform hover:-translate-y-0.5">
-                      Proceed to Checkout
+                      Үргэлжлүүлэх
                     </button>
 
-                    <Link to="/products" className="group w-full mt-4">
+                    {/* <Link to="/products" className="group w-full mt-4">
                       <button className="w-full bg-white text-neutral-900 py-4 px-6 rounded-2xl font-semibold text-lg border-2 border-neutral-300 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 transition-all duration-300 shadow-soft hover:shadow-medium">
                         Continue Shopping
                         <svg className="inline-block ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
                         </svg>
                       </button>
-                    </Link>
+                    </Link> */}
                   </div>
 
                   {/* Payment Methods */}
