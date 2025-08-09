@@ -4,8 +4,14 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLoaderData,
 } from "@remix-run/react";
-import type { LinksFunction } from "@remix-run/node";
+import type { LinksFunction, LoaderFunctionArgs } from "@remix-run/node";
+import { Header } from './components/Header';
+import { Footer } from './components/Footer';
+import { shopApiRequest } from './lib/graphql';
+import { GET_ACTIVE_ORDER } from './lib/queries';
+import { Order } from './lib/types';
 
 import "./tailwind.css";
 
@@ -22,6 +28,19 @@ export const links: LinksFunction = () => [
   },
 ];
 
+export async function loader({ request }: LoaderFunctionArgs) {
+  try {
+    const { activeOrder } = await shopApiRequest<{ activeOrder: Order | null }>(
+      GET_ACTIVE_ORDER
+    );
+    
+    return { activeOrder };
+  } catch (error) {
+    console.error('Failed to load active order:', error);
+    return { activeOrder: null };
+  }
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
@@ -31,7 +50,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Meta />
         <Links />
       </head>
-      <body>
+      <body className="min-h-screen flex flex-col bg-gray-50">
         {children}
         <ScrollRestoration />
         <Scripts />
@@ -41,5 +60,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />;
+  const { activeOrder } = useLoaderData<typeof loader>();
+  
+  return (
+    <>
+      <Header activeOrder={activeOrder} />
+      <main className="flex-1">
+        <Outlet />
+      </main>
+      <Footer />
+    </>
+  );
 }

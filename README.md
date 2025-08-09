@@ -1,40 +1,133 @@
-# Welcome to Remix!
+# Vendure Storefront
 
-- 📖 [Remix docs](https://remix.run/docs)
+A modern ecommerce storefront built with Remix and Storefront UI, designed to work with Vendure backend.
 
-## Development
+## Tech Stack
 
-Run the dev server:
+- **Framework**: Remix (React Router v7)
+- **UI Library**: Storefront UI (React components)
+- **Styling**: Tailwind CSS
+- **GraphQL Client**: graphql-request
+- **Backend**: Vendure ecommerce backend
 
-```sh
+## Features
+
+- 🏠 Modern homepage with hero section and featured products
+- 🛍️ Product listing with search and pagination
+- 📱 Responsive product detail pages with image galleries
+- 🛒 Shopping cart functionality (add, remove, adjust quantities)
+- 📂 Collection browsing
+- 🎨 Beautiful UI components from Storefront UI
+- ⚡ Fast loading with Remix's SSR and data loading
+- 🔍 SEO-friendly with proper meta tags
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 20+ 
+- A running Vendure backend (see `../backend/` directory)
+
+### Installation
+
+1. Install dependencies:
+```bash
+npm install
+```
+
+2. Set up environment variables:
+```bash
+cp .env.example .env
+```
+
+3. Update the `.env` file with your Vendure backend URL:
+```
+VENDURE_SHOP_API_URL=http://localhost:3000/shop-api
+```
+
+### Development
+
+Start the development server:
+```bash
 npm run dev
 ```
 
-## Deployment
+The storefront will be available at `http://localhost:3000` (or the next available port).
 
-First, build your app for production:
+### Building for Production
 
-```sh
+```bash
 npm run build
-```
-
-Then run the app in production mode:
-
-```sh
 npm start
 ```
 
-Now you'll need to pick a host to deploy it to.
+## Project Structure
 
-### DIY
+```
+app/
+├── components/          # Reusable UI components
+│   ├── Header.tsx      # Site header with navigation and cart
+│   ├── Footer.tsx      # Site footer
+│   └── ProductCard.tsx # Product card component
+├── lib/                # Utilities and configuration
+│   ├── graphql.ts      # GraphQL client setup
+│   ├── queries.ts      # GraphQL queries and mutations
+│   └── types.ts        # TypeScript type definitions
+├── routes/             # Remix routes
+│   ├── _index.tsx      # Homepage
+│   ├── products._index.tsx  # Product listing
+│   ├── products.$slug.tsx   # Product detail pages
+│   ├── collections._index.tsx # Collection listing
+│   └── cart.tsx        # Shopping cart
+└── root.tsx            # Root layout with header/footer
+```
 
-If you're familiar with deploying Node applications, the built-in Remix app server is production-ready.
+## GraphQL Integration
 
-Make sure to deploy the output of `npm run build`
+The storefront connects to your Vendure backend using GraphQL queries for:
 
-- `build/server`
-- `build/client`
+- **Products**: Fetching product listings, details, and search
+- **Collections**: Loading product collections and categories  
+- **Cart**: Managing the shopping cart (add/remove/adjust items)
+- **Orders**: Retrieving the active order/cart state
 
-## Styling
+## Customization
 
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever css framework you prefer. See the [Vite docs on css](https://vitejs.dev/guide/features.html#css) for more information.
+### Styling
+- Tailwind CSS classes can be customized in `tailwind.config.ts`
+- Storefront UI components can be themed and customized
+- Global styles are in `app/tailwind.css`
+
+### Backend Integration
+- GraphQL endpoint is configurable via `VENDURE_SHOP_API_URL`
+- Queries and mutations are in `app/lib/queries.ts`
+- TypeScript types match Vendure's GraphQL schema
+
+### Components
+- All UI components use Storefront UI for consistency
+- Components are in `app/components/` and can be customized
+- Layout components (Header/Footer) include navigation and branding
+
+## Deployment
+
+This is a standard Remix application that can be deployed to:
+
+- Vercel
+- Netlify  
+- Railway
+- Render
+- Docker containers
+- Node.js servers
+
+See the [Remix deployment docs](https://remix.run/docs/en/main/guides/deployment) for detailed instructions.
+
+## Environment Variables
+
+- `VENDURE_SHOP_API_URL` - URL to your Vendure shop API (default: http://localhost:3000/shop-api)
+
+## Contributing
+
+1. Make sure your Vendure backend is running with sample data
+2. Start the storefront development server
+3. Test all features (browsing, search, cart, etc.)
+4. Follow the existing code patterns and component structure
