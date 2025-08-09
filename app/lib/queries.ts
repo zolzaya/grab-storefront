@@ -165,6 +165,31 @@ export const GET_ACTIVE_ORDER = `
       }
       shippingWithTax
       shipping
+      shippingAddress {
+        fullName
+        company
+        streetLine1
+        streetLine2
+        city
+        province
+        postalCode
+        countryCode
+        phoneNumber
+      }
+      shippingLines {
+        shippingMethod {
+          id
+          name
+          description
+        }
+        priceWithTax
+      }
+      customer {
+        id
+        firstName
+        lastName
+        emailAddress
+      }
     }
   }
 `
@@ -469,6 +494,48 @@ export const TRANSITION_ORDER_TO_STATE = `
         transitionError
         fromState
         toState
+      }
+    }
+  }
+`
+
+export const GET_ORDER_BY_CODE = `
+  query GetOrderByCode($code: String!) {
+    orderByCode(code: $code) {
+      id
+      code
+      state
+      total
+      totalWithTax
+      totalQuantity
+      lines {
+        id
+        quantity
+        linePriceWithTax
+        productVariant {
+          id
+          name
+          price
+          priceWithTax
+          sku
+          product {
+            id
+            name
+            slug
+            featuredAsset {
+              id
+              preview
+            }
+          }
+        }
+      }
+      shippingWithTax
+      shipping
+      payments {
+        id
+        method
+        amount
+        state
       }
     }
   }
