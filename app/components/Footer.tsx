@@ -206,7 +206,7 @@ export function Footer() {
           <div className="flex flex-col lg:flex-row justify-between items-center space-y-6 lg:space-y-0">
             <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-8">
               <p className="text-neutral-400 text-center sm:text-left">
-                © 2025 GRAB.MN. Зохиогчийн эрх хуулиар хамгаалагдсан болно.
+                © 2025 GRAB.MN. Зохиогчийн эрх хуулиар хамгаалагдсан.
               </p>
               <div className="flex items-center space-x-6">
                 <div className="flex items-center space-x-2">
