@@ -16,14 +16,38 @@ export const meta: MetaFunction = () => {
 export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const search = url.searchParams.get("search") || "";
+  const sort = url.searchParams.get("sort") || "relevance";
   const page = parseInt(url.searchParams.get("page") || "1");
   const limit = 12;
   const skip = (page - 1) * limit;
 
   try {
+    // Define sort options
+    const getSortOptions = (sortValue: string) => {
+      switch (sortValue) {
+        case "name-asc":
+          return { name: "ASC" as const };
+        case "name-desc":
+          return { name: "DESC" as const };
+        case "price-low":
+          return { price: "ASC" as const };
+        case "price-high":
+          return { price: "DESC" as const };
+        case "newest":
+          return { createdAt: "DESC" as const };
+        case "oldest":
+          return { createdAt: "ASC" as const };
+        default:
+          return undefined; // relevance - no sorting
+      }
+    };
+
+    const sortOptions = getSortOptions(sort);
+
     const options = {
       take: limit,
       skip,
+      ...(sortOptions && { sort: sortOptions }),
       ...(search && {
         filter: {
           name: {
@@ -42,7 +66,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
       products, 
       currentPage: page, 
       totalPages: Math.ceil(products.totalItems / limit),
-      search 
+      search,
+      sort
     });
   } catch (error) {
     console.error('Failed to load products:', error);
@@ -50,13 +75,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
       products: { items: [], totalItems: 0 }, 
       currentPage: 1, 
       totalPages: 1,
-      search 
+      search,
+      sort
     });
   }
 }
 
 export default function Products() {
-  const { products, currentPage, totalPages, search } = useLoaderData<typeof loader>();
+  const { products, currentPage, totalPages, search, sort } = useLoaderData<typeof loader>();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
@@ -78,6 +104,20 @@ export default function Products() {
   const goToPage = (page: number) => {
     const newParams = new URLSearchParams(searchParams);
     newParams.set("page", page.toString());
+    setSearchParams(newParams);
+  };
+
+  const handleSortChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const newParams = new URLSearchParams(searchParams);
+    const sortValue = event.target.value;
+    
+    if (sortValue === "relevance") {
+      newParams.delete("sort");
+    } else {
+      newParams.set("sort", sortValue);
+    }
+    newParams.delete("page"); // Reset to page 1 when sorting
+    
     setSearchParams(newParams);
   };
 
@@ -146,12 +186,19 @@ export default function Products() {
             {/* Sort Options */}
             <div className="flex items-center space-x-3">
               <label htmlFor="sort-select" className="text-sm font-medium text-neutral-700">Sort by:</label>
-              <select id="sort-select" className="px-4 py-2 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 bg-white">
+              <select 
+                id="sort-select" 
+                value={sort} 
+                onChange={handleSortChange}
+                className="px-4 py-2 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 bg-white"
+              >
                 <option value="relevance">Relevance</option>
+                <option value="name-asc">Name: A to Z</option>
+                <option value="name-desc">Name: Z to A</option>
                 <option value="price-low">Price: Low to High</option>
                 <option value="price-high">Price: High to Low</option>
-                <option value="newest">Newest</option>
-                <option value="rating">Rating</option>
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
               </select>
             </div>
           </div>
