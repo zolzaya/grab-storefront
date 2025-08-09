@@ -182,9 +182,6 @@ export default function Cart() {
                               </svg>
                             </div>
                           )}
-                          <div className="absolute -top-2 -right-2 bg-brand-600 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">
-                            {line.quantity}
-                          </div>
                         </div>
                       </div>
 
@@ -205,9 +202,6 @@ export default function Cart() {
 
                         <div className="flex items-center space-x-4 text-sm text-neutral-500 mb-3">
                           <span className="bg-neutral-100 px-3 py-1 rounded-full">SKU: {line.productVariant.sku}</span>
-                          <span className="text-lg font-bold text-neutral-900">
-                            {formatPrice(line.productVariant.priceWithTax)} each
-                          </span>
                         </div>
 
                         {/* Mobile Quantity and Total */}
