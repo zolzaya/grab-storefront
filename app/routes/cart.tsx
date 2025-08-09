@@ -1,6 +1,8 @@
 import type { MetaFunction, LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node"
 
 import { useLoaderData, useActionData, Form, Link } from "@remix-run/react"
+import { PaymentMethods } from "../components/cart/PaymentMethods"
+import { TrustBadges } from "../components/cart/TrustBadges"
 import { shopApiRequest } from "~/lib/graphql"
 import { GET_ACTIVE_ORDER, REMOVE_ORDER_LINE, ADJUST_ORDER_LINE } from "~/lib/queries"
 import { Order, RemoveOrderLineResult, AdjustOrderLineResult } from "~/lib/types"
@@ -146,19 +148,6 @@ export default function Cart() {
           </div>
         )}
 
-        {actionData && 'success' in actionData && (
-          <div className="mb-8 animate-fade-in">
-            <div className="max-w-2xl mx-auto p-6 bg-success-50 border-2 border-success-200 rounded-2xl shadow-soft">
-              <div className="flex items-center">
-                <svg className="w-6 h-6 text-success-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <p className="text-success-800 font-medium">Cart updated successfully!</p>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Cart Layout Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Cart Items */}
@@ -175,7 +164,7 @@ export default function Cart() {
 
               <div className="divide-y divide-neutral-100">
                 {activeOrder.lines.map((line, index) => (
-                  <div key={line.id} className="p-8 hover:bg-neutral-50 transition-colors duration-200" style={{animationDelay: `${index * 0.05}s`}}>
+                  <div key={line.id} className="p-8 hover:bg-neutral-50 transition-colors duration-200" style={{ animationDelay: `${index * 0.05}s` }}>
                     <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-6">
                       {/* Product Image */}
                       <div className="flex-shrink-0">
@@ -209,11 +198,11 @@ export default function Cart() {
                             {line.productVariant.product.name}
                           </h3>
                         </Link>
-                        
+
                         {line.productVariant.name !== line.productVariant.product.name && (
                           <p className="text-neutral-600 mb-2 font-medium">{line.productVariant.name}</p>
                         )}
-                        
+
                         <div className="flex items-center space-x-4 text-sm text-neutral-500 mb-3">
                           <span className="bg-neutral-100 px-3 py-1 rounded-full">SKU: {line.productVariant.sku}</span>
                           <span className="text-lg font-bold text-neutral-900">
@@ -362,7 +351,7 @@ export default function Cart() {
                       <span className="text-neutral-600">Subtotal ({activeOrder.totalQuantity} {activeOrder.totalQuantity === 1 ? 'item' : 'items'})</span>
                       <span className="font-bold text-neutral-900">{formatPrice(activeOrder.total)}</span>
                     </div>
-                    
+
                     <div className="flex justify-between items-center">
                       <span className="text-neutral-600">Tax</span>
                       <span className="font-bold text-neutral-900">
@@ -409,8 +398,8 @@ export default function Cart() {
                     <button className="w-full bg-gradient-to-r from-neutral-900 to-neutral-800 text-white py-4 px-6 rounded-2xl font-bold text-lg hover:from-neutral-800 hover:to-neutral-700 transition-all duration-300 shadow-large hover:shadow-xl transform hover:-translate-y-0.5">
                       Proceed to Checkout
                     </button>
-                    
-                    <Link to="/products" className="group w-full">
+
+                    <Link to="/products" className="group w-full mt-4">
                       <button className="w-full bg-white text-neutral-900 py-4 px-6 rounded-2xl font-semibold text-lg border-2 border-neutral-300 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 transition-all duration-300 shadow-soft hover:shadow-medium">
                         Continue Shopping
                         <svg className="inline-block ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -422,63 +411,14 @@ export default function Cart() {
 
                   {/* Payment Methods */}
                   <div className="border-t border-neutral-200 pt-6">
-                    <p className="text-sm font-medium text-neutral-700 mb-3 text-center">Secure Payment</p>
-                    <div className="flex justify-center items-center space-x-3">
-                      <div className="w-10 h-6 bg-neutral-100 rounded border border-neutral-300 flex items-center justify-center">
-                        <span className="text-xs font-bold text-neutral-600">VISA</span>
-                      </div>
-                      <div className="w-10 h-6 bg-neutral-100 rounded border border-neutral-300 flex items-center justify-center">
-                        <span className="text-xs font-bold text-neutral-600">MC</span>
-                      </div>
-                      <div className="w-10 h-6 bg-neutral-100 rounded border border-neutral-300 flex items-center justify-center">
-                        <span className="text-xs font-bold text-neutral-600">AMEX</span>
-                      </div>
-                      <div className="w-10 h-6 bg-neutral-100 rounded border border-neutral-300 flex items-center justify-center">
-                        <span className="text-xs font-bold text-neutral-600">PP</span>
-                      </div>
-                    </div>
+                    <PaymentMethods />
                   </div>
                 </div>
               </div>
 
               {/* Trust Badges */}
-              <div className="mt-8 bg-white rounded-2xl shadow-soft p-6">
-                <h4 className="text-lg font-bold text-neutral-900 mb-4 text-center">Why Shop With Us?</h4>
-                <div className="space-y-4">
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 bg-success-100 rounded-xl flex items-center justify-center mr-4 flex-shrink-0">
-                      <svg className="w-5 h-5 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="font-semibold text-neutral-900">30-Day Returns</p>
-                      <p className="text-sm text-neutral-600">Hassle-free returns</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 bg-brand-100 rounded-xl flex items-center justify-center mr-4 flex-shrink-0">
-                      <svg className="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="font-semibold text-neutral-900">Fast Shipping</p>
-                      <p className="text-sm text-neutral-600">2-3 business days</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 bg-warning-100 rounded-xl flex items-center justify-center mr-4 flex-shrink-0">
-                      <svg className="w-5 h-5 text-warning-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="font-semibold text-neutral-900">Secure Checkout</p>
-                      <p className="text-sm text-neutral-600">SSL encrypted</p>
-                    </div>
-                  </div>
-                </div>
+              <div className="mt-8">
+                <TrustBadges />
               </div>
             </div>
           </div>
