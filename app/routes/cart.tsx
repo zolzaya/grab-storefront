@@ -364,9 +364,11 @@ export default function Cart() {
 
                   {/* Action Buttons */}
                   <div className="space-y-4">
-                    <button className="w-full bg-gradient-to-r from-neutral-900 to-neutral-800 text-white py-4 px-6 rounded-2xl font-bold text-lg hover:from-neutral-800 hover:to-neutral-700 transition-all duration-300 shadow-large hover:shadow-xl transform hover:-translate-y-0.5">
-                      Үргэлжлүүлэх
-                    </button>
+                    <Link to="/checkout" className="block w-full">
+                      <button className="w-full bg-gradient-to-r from-neutral-900 to-neutral-800 text-white py-4 px-6 rounded-2xl font-bold text-lg hover:from-neutral-800 hover:to-neutral-700 transition-all duration-300 shadow-large hover:shadow-xl transform hover:-translate-y-0.5">
+                        Үргэлжлүүлэх
+                      </button>
+                    </Link>
 
                     {/* <Link to="/products" className="group w-full mt-4">
                       <button className="w-full bg-white text-neutral-900 py-4 px-6 rounded-2xl font-semibold text-lg border-2 border-neutral-300 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 transition-all duration-300 shadow-soft hover:shadow-medium">

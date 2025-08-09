@@ -288,3 +288,188 @@ export const ADJUST_ORDER_LINE = `
     }
   }
 `
+
+// Checkout-related queries and mutations
+export const ELIGIBLE_SHIPPING_METHODS = `
+  query EligibleShippingMethods {
+    eligibleShippingMethods {
+      id
+      name
+      code
+      description
+      priceWithTax
+      metadata
+    }
+  }
+`
+
+export const ELIGIBLE_PAYMENT_METHODS = `
+  query EligiblePaymentMethods {
+    eligiblePaymentMethods {
+      id
+      name
+      code
+      description
+      isEligible
+      eligibilityMessage
+    }
+  }
+`
+
+export const SET_CUSTOMER_FOR_ORDER = `
+  mutation SetCustomerForOrder($input: CreateCustomerInput!) {
+    setCustomerForOrder(input: $input) {
+      ... on Order {
+        id
+        code
+        customer {
+          id
+          firstName
+          lastName
+          emailAddress
+        }
+      }
+      ... on ErrorResult {
+        errorCode
+        message
+      }
+    }
+  }
+`
+
+export const SET_ORDER_SHIPPING_ADDRESS = `
+  mutation SetOrderShippingAddress($input: CreateAddressInput!) {
+    setOrderShippingAddress(input: $input) {
+      ... on Order {
+        id
+        code
+        state
+        shippingAddress {
+          fullName
+          company
+          streetLine1
+          streetLine2
+          city
+          province
+          postalCode
+          countryCode
+          phoneNumber
+        }
+      }
+      ... on ErrorResult {
+        errorCode
+        message
+      }
+    }
+  }
+`
+
+export const SET_ORDER_BILLING_ADDRESS = `
+  mutation SetOrderBillingAddress($input: CreateAddressInput!) {
+    setOrderBillingAddress(input: $input) {
+      ... on Order {
+        id
+        code
+        state
+        billingAddress {
+          fullName
+          company
+          streetLine1
+          streetLine2
+          city
+          province
+          postalCode
+          countryCode
+          phoneNumber
+        }
+      }
+      ... on ErrorResult {
+        errorCode
+        message
+      }
+    }
+  }
+`
+
+export const SET_ORDER_SHIPPING_METHOD = `
+  mutation SetOrderShippingMethod($shippingMethodId: [ID!]!) {
+    setOrderShippingMethod(shippingMethodId: $shippingMethodId) {
+      ... on Order {
+        id
+        code
+        state
+        shipping
+        shippingWithTax
+        shippingLines {
+          shippingMethod {
+            id
+            name
+            description
+          }
+          priceWithTax
+        }
+      }
+      ... on ErrorResult {
+        errorCode
+        message
+      }
+    }
+  }
+`
+
+export const ADD_PAYMENT_TO_ORDER = `
+  mutation AddPaymentToOrder($input: PaymentInput!) {
+    addPaymentToOrder(input: $input) {
+      ... on Order {
+        id
+        code
+        state
+        totalWithTax
+        payments {
+          id
+          method
+          amount
+          state
+          metadata
+        }
+      }
+      ... on ErrorResult {
+        errorCode
+        message
+      }
+      ... on PaymentFailedError {
+        errorCode
+        message
+        paymentErrorMessage
+      }
+      ... on PaymentDeclinedError {
+        errorCode
+        message
+        paymentErrorMessage
+      }
+      ... on OrderPaymentStateError {
+        errorCode
+        message
+      }
+    }
+  }
+`
+
+export const TRANSITION_ORDER_TO_STATE = `
+  mutation TransitionOrderToState($state: String!) {
+    transitionOrderToState(state: $state) {
+      ... on Order {
+        id
+        code
+        state
+      }
+      ... on OrderStateTransitionError {
+        errorCode
+        message
+        transitionError
+        fromState
+        toState
+      }
+    }
+  }
+`
