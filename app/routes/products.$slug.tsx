@@ -179,19 +179,37 @@ export default function ProductDetail() {
               </span>
             </div>
 
-            {/* Price */}
+            {/* Price & Availability */}
             <div className="mb-8">
-              <div className="flex items-center space-x-3">
-                <div className="text-4xl font-bold text-neutral-900">
-                  {formatPrice(selectedVariant?.priceWithTax || 0)}
-                </div>
-                {hasDiscount && (
-                  <div className="text-2xl font-medium text-neutral-500 line-through">
-                    {formatPrice(originalPrice)}
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center space-x-3">
+                  <div className="text-4xl font-bold text-neutral-900">
+                    {formatPrice(selectedVariant?.priceWithTax || 0)}
                   </div>
-                )}
+                  {hasDiscount && (
+                    <div className="text-2xl font-medium text-neutral-500 line-through">
+                      {formatPrice(originalPrice)}
+                    </div>
+                  )}
+                </div>
+                
+                {/* Stock Status Badge */}
+                <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold border-2 ${
+                  isOutOfStock
+                    ? 'bg-error-50 text-error-800 border-error-200'
+                    : 'bg-success-50 text-success-800 border-success-200'
+                }`}>
+                  <svg className={`w-4 h-4 mr-2 ${isOutOfStock ? 'text-error-600' : 'text-success-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {isOutOfStock ? (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    ) : (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    )}
+                  </svg>
+                  {isOutOfStock ? 'Out of Stock' : `${selectedVariant?.stockLevel} In Stock`}
+                </div>
               </div>
-              <p className="text-neutral-600 mt-2">Price includes tax and shipping</p>
+              <p className="text-neutral-600">Price includes tax and shipping</p>
             </div>
 
 
@@ -288,24 +306,6 @@ export default function ProductDetail() {
                     </svg>
                   </button>
                 </div>
-              </div>
-
-              {/* Stock Status - separate section below */}
-              <div className="flex items-center justify-center">
-                <span className={`inline-flex items-center px-4 py-2 rounded-2xl text-sm font-semibold ${
-                  isOutOfStock
-                    ? 'bg-error-100 text-error-800'
-                    : 'bg-success-100 text-success-800'
-                }`}>
-                  <svg className={`w-4 h-4 mr-2 ${isOutOfStock ? 'text-error-600' : 'text-success-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    {isOutOfStock ? (
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    ) : (
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    )}
-                  </svg>
-                  {isOutOfStock ? 'Out of Stock' : `${selectedVariant?.stockLevel} Available`}
-                </span>
               </div>
 
               {/* Action Messages */}
