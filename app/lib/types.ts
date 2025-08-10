@@ -588,6 +588,7 @@ export interface SortOption {
   label: string
   field?: string
   direction?: 'ASC' | 'DESC'
+  category?: string
 }
 
 export interface SearchInput {

@@ -1,19 +1,31 @@
 import type { SortOption } from "./types";
 
 export const SORT_OPTIONS: SortOption[] = [
-  { value: "relevance", label: "Relevance" },
-  { value: "name-asc", label: "Name: A to Z", field: "name", direction: "ASC" },
-  { value: "name-desc", label: "Name: Z to A", field: "name", direction: "DESC" },
-  { value: "price-low", label: "Price: Low to High", field: "price", direction: "ASC" },
-  { value: "price-high", label: "Price: High to Low", field: "price", direction: "DESC" },
-  { value: "newest", label: "Newest First", field: "createdAt", direction: "DESC" },
-  { value: "oldest", label: "Oldest First", field: "createdAt", direction: "ASC" },
-  { value: "rating-high", label: "Highest Rated", field: "reviewRating", direction: "DESC" },
-  { value: "rating-low", label: "Lowest Rated", field: "reviewRating", direction: "ASC" },
-  { value: "most-reviewed", label: "Most Reviewed", field: "reviewCount", direction: "DESC" },
-  { value: "bestselling", label: "Best Selling", field: "bestselling", direction: "DESC" },
-  { value: "updated", label: "Recently Updated", field: "updatedAt", direction: "DESC" },
+  { value: "relevance", label: "Best Match", field: "relevance", direction: "DESC", category: "featured" },
+  { value: "bestselling", label: "Best Selling", field: "bestselling", direction: "DESC", category: "featured" },
+  { value: "trending", label: "Trending", field: "trending", direction: "DESC", category: "featured" },
+  { value: "featured", label: "Featured", field: "featured", direction: "DESC", category: "featured" },
+  { value: "newest", label: "Newest", field: "createdAt", direction: "DESC", category: "time" },
+  { value: "oldest", label: "Oldest", field: "createdAt", direction: "ASC", category: "time" },
+  { value: "updated", label: "Recently Updated", field: "updatedAt", direction: "DESC", category: "time" },
+  { value: "price-low", label: "Price: Low to High", field: "price", direction: "ASC", category: "price" },
+  { value: "price-high", label: "Price: High to Low", field: "price", direction: "DESC", category: "price" },
+  { value: "name-asc", label: "Name: A to Z", field: "name", direction: "ASC", category: "alphabetical" },
+  { value: "name-desc", label: "Name: Z to A", field: "name", direction: "DESC", category: "alphabetical" },
+  { value: "rating-high", label: "Highest Rated", field: "reviewRating", direction: "DESC", category: "reviews" },
+  { value: "most-reviewed", label: "Most Reviewed", field: "reviewCount", direction: "DESC", category: "reviews" },
+  { value: "most-popular", label: "Most Popular This Week", field: "popularityScore", direction: "DESC", category: "featured" },
+  { value: "staff-picks", label: "Staff Picks", field: "staffPicks", direction: "DESC", category: "featured" },
+  { value: "customer-favorites", label: "Customer Favorites", field: "customerFavorites", direction: "DESC", category: "featured" },
 ];
+
+export const SORT_CATEGORIES = {
+  featured: "Featured",
+  time: "By Date",
+  price: "By Price",
+  alphabetical: "Alphabetical",
+  reviews: "By Reviews"
+} as const;
 
 export const DEFAULT_PRODUCTS_LIMIT = 12;
 export const DEFAULT_COLLECTIONS_LIMIT = 50;

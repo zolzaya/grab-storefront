@@ -2,9 +2,13 @@ import type { MetaFunction, LoaderFunctionArgs } from "@remix-run/node";
 
 import { useLoaderData, useSearchParams } from "@remix-run/react";
 import { ProductCard } from "~/components/ProductCard";
+import { SortDropdown } from "~/components/SortDropdown";
+import { ViewToggle, type ViewMode, getGridClasses, useResponsiveView } from "~/components/ViewToggle";
+import { Pagination, useScrollMemory } from "~/components/Pagination";
 import { shopApiRequest } from "~/lib/graphql";
 import { GET_PRODUCTS } from "~/lib/queries";
 import { ProductList } from "~/lib/types";
+import { useState, useMemo } from "react";
 
 export const meta: MetaFunction = () => {
   return [
@@ -18,11 +22,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const search = url.searchParams.get("search") || "";
   const sort = url.searchParams.get("sort") || "relevance";
   const page = parseInt(url.searchParams.get("page") || "1");
-  const limit = 12;
+  const limit = parseInt(url.searchParams.get("limit") || "12");
+  const view = (url.searchParams.get("view") || "grid") as ViewMode;
   const skip = (page - 1) * limit;
 
   try {
-    // Define sort options
+    // Enhanced sort options with new Shopify-style sorting
     const getSortOptions = (sortValue: string) => {
       switch (sortValue) {
         case "name-asc":
@@ -37,6 +42,25 @@ export async function loader({ request }: LoaderFunctionArgs) {
           return { createdAt: "DESC" as const };
         case "oldest":
           return { createdAt: "ASC" as const };
+        case "rating-high":
+          return { reviewRating: "DESC" as const };
+        case "most-reviewed":
+          return { reviewCount: "DESC" as const };
+        case "bestselling":
+          // For now, sort by creation date as a proxy for bestselling
+          // In a real app, this would be a calculated field
+          return { createdAt: "DESC" as const };
+        case "trending":
+          // Sort by recently updated as a proxy for trending
+          return { updatedAt: "DESC" as const };
+        case "featured":
+          // Sort by newest as a proxy for featured
+          return { createdAt: "DESC" as const };
+        case "most-popular":
+        case "staff-picks":
+        case "customer-favorites":
+          // These would require custom fields in a real implementation
+          return { createdAt: "DESC" as const };
         default:
           return undefined; // relevance - no sorting
       }
@@ -68,7 +92,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
       currentPage: page, 
       totalPages: Math.ceil(products.totalItems / limit),
       search,
-      sort
+      sort,
+      view,
+      limit
     });
   } catch (error) {
     console.error('Failed to load products:', error);
@@ -77,14 +103,21 @@ export async function loader({ request }: LoaderFunctionArgs) {
       currentPage: 1, 
       totalPages: 1,
       search,
-      sort
+      sort,
+      view,
+      limit
     });
   }
 }
 
 export default function Products() {
-  const { products, currentPage, totalPages, search, sort } = useLoaderData<typeof loader>();
+  const { products, currentPage, totalPages, search, sort, view, limit } = useLoaderData<typeof loader>();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [currentView, setCurrentView] = useState<ViewMode>(view);
+  const responsiveView = useResponsiveView(currentView);
+  
+  // Remember scroll position
+  useScrollMemory('products');
 
   const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -108,9 +141,8 @@ export default function Products() {
     setSearchParams(newParams);
   };
 
-  const handleSortChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleSortChange = (sortValue: string) => {
     const newParams = new URLSearchParams(searchParams);
-    const sortValue = event.target.value;
     
     if (sortValue === "relevance") {
       newParams.delete("sort");
@@ -121,6 +153,37 @@ export default function Products() {
     
     setSearchParams(newParams);
   };
+
+  const handleViewChange = (newView: ViewMode) => {
+    setCurrentView(newView);
+    const newParams = new URLSearchParams(searchParams);
+    
+    if (newView === "grid") {
+      newParams.delete("view");
+    } else {
+      newParams.set("view", newView);
+    }
+    
+    setSearchParams(newParams);
+  };
+
+  const handleItemsPerPageChange = (newLimit: number) => {
+    const newParams = new URLSearchParams(searchParams);
+    
+    if (newLimit === 12) {
+      newParams.delete("limit");
+    } else {
+      newParams.set("limit", newLimit.toString());
+    }
+    newParams.delete("page"); // Reset to page 1 when changing items per page
+    
+    setSearchParams(newParams);
+  };
+
+  // Calculate grid classes based on responsive view
+  const gridClasses = useMemo(() => {
+    return getGridClasses(responsiveView);
+  }, [responsiveView]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-white">
@@ -184,101 +247,57 @@ export default function Products() {
               )}
             </div>
             
-            {/* Sort Options */}
+            {/* Enhanced Sort Options */}
             <div className="flex items-center space-x-3">
-              <label htmlFor="sort-select" className="text-sm font-medium text-neutral-700">Sort by:</label>
-              <select 
-                id="sort-select" 
-                value={sort} 
-                onChange={handleSortChange}
-                className="px-4 py-2 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 bg-white"
-              >
-                <option value="relevance">Relevance</option>
-                <option value="name-asc">Name: A to Z</option>
-                <option value="name-desc">Name: Z to A</option>
-                <option value="price-low">Price: Low to High</option>
-                <option value="price-high">Price: High to Low</option>
-                <option value="newest">Newest First</option>
-                <option value="oldest">Oldest First</option>
-              </select>
+              <label className="text-sm font-medium text-neutral-700">Sort by:</label>
+              <SortDropdown
+                currentSort={sort}
+                onSortChange={handleSortChange}
+                showCategories={true}
+              />
             </div>
           </div>
           
-          {/* View Toggle */}
-          <div className="flex items-center space-x-2 mt-4 lg:mt-0">
-            <span className="text-sm font-medium text-neutral-700">View:</span>
-            <div className="flex bg-neutral-100 rounded-xl p-1">
-              <button className="px-3 py-2 text-sm font-medium rounded-lg bg-white text-neutral-900 shadow-soft">
-                Grid
-              </button>
-              <button className="px-3 py-2 text-sm font-medium rounded-lg text-neutral-600 hover:text-neutral-900">
-                List
-              </button>
-            </div>
-          </div>
+          {/* Enhanced View Toggle */}
+          <ViewToggle
+            currentView={currentView}
+            onViewChange={handleViewChange}
+            availableViews={['grid', 'list', 'compact', 'large']}
+            className="mt-4 lg:mt-0"
+          />
         </div>
 
         {products.items.length > 0 ? (
           <>
-            {/* Products Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-16">
+            {/* Products Grid with Dynamic Layout */}
+            <div className={`${gridClasses} mb-16`}>
               {products.items.map((product, index) => (
-                <div key={product.id} style={{animationDelay: `${index * 0.05}s`}}>
-                  <ProductCard product={product} />
+                <div 
+                  key={product.id} 
+                  className="animate-fade-in-up"
+                  style={{animationDelay: `${index * 0.05}s`}}
+                >
+                  <ProductCard 
+                    product={product} 
+                    viewMode={responsiveView}
+                    showQuickAdd={responsiveView !== 'compact'}
+                    showWishlist={responsiveView !== 'compact'}
+                    showVariants={responsiveView === 'large'}
+                  />
                 </div>
               ))}
             </div>
 
             {/* Enhanced Pagination */}
-            {totalPages > 1 && (
-              <div className="flex flex-col sm:flex-row items-center justify-between bg-white rounded-2xl shadow-soft p-6">
-                <div className="text-neutral-700 mb-4 sm:mb-0">
-                  Showing page <span className="font-semibold">{currentPage}</span> of <span className="font-semibold">{totalPages}</span>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => goToPage(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className="flex items-center px-4 py-2 text-sm font-medium text-neutral-600 bg-white border-2 border-neutral-300 rounded-xl hover:bg-neutral-50 hover:border-neutral-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-                  >
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-                    </svg>
-                    Previous
-                  </button>
-                  
-                  <div className="flex items-center space-x-1">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1)
-                      .slice(Math.max(0, currentPage - 2), Math.min(totalPages, currentPage + 1))
-                      .map((page) => (
-                        <button
-                          key={page}
-                          onClick={() => goToPage(page)}
-                          className={`px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 ${
-                            page === currentPage
-                              ? 'bg-brand-600 text-white shadow-medium'
-                              : 'text-neutral-600 bg-white border-2 border-neutral-300 hover:bg-neutral-50 hover:border-neutral-400'
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      ))}
-                  </div>
-                  
-                  <button
-                    onClick={() => goToPage(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className="flex items-center px-4 py-2 text-sm font-medium text-neutral-600 bg-white border-2 border-neutral-300 rounded-xl hover:bg-neutral-50 hover:border-neutral-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-                  >
-                    Next
-                    <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            )}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={products.totalItems}
+              itemsPerPage={limit}
+              onPageChange={goToPage}
+              onItemsPerPageChange={handleItemsPerPageChange}
+              style="standard"
+            />
           </>
         ) : (
           <div className="text-center py-24 animate-fade-in">

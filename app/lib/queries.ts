@@ -41,25 +41,9 @@ export const GET_PRODUCTS = `
             code
           }
         }
-        customFields
         enabled
-        reviewRating
-        reviewCount
       }
       totalItems
-      facetValues {
-        facetValue {
-          id
-          name
-          code
-          facet {
-            id
-            name
-            code
-          }
-        }
-        count
-      }
     }
   }
 `
