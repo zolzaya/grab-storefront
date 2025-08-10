@@ -22,7 +22,7 @@ export function PriceRangeFilter({
   const [localMax, setLocalMax] = useState(currentRange?.max?.toString() || "")
   const [sliderMin, setSliderMin] = useState(currentRange?.min || priceRange?.min || 0)
   const [sliderMax, setSliderMax] = useState(currentRange?.max || priceRange?.max || 1000)
-  
+
   const minInputRef = useRef<HTMLInputElement>(null)
   const maxInputRef = useRef<HTMLInputElement>(null)
 
@@ -52,7 +52,7 @@ export function PriceRangeFilter({
   const handleMinInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     setLocalMin(value)
-    
+
     const numValue = Number(value)
     if (!isNaN(numValue) && numValue >= rangeMin && numValue <= rangeMax) {
       setSliderMin(Math.min(numValue, sliderMax - step))
@@ -62,7 +62,7 @@ export function PriceRangeFilter({
   const handleMaxInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     setLocalMax(value)
-    
+
     const numValue = Number(value)
     if (!isNaN(numValue) && numValue >= rangeMin && numValue <= rangeMax) {
       setSliderMax(Math.max(numValue, sliderMin + step))
@@ -72,10 +72,10 @@ export function PriceRangeFilter({
   const handleApply = useCallback(() => {
     const min = localMin ? parseFloat(localMin) : undefined
     const max = localMax ? parseFloat(localMax) : undefined
-    
+
     if (min !== undefined || max !== undefined) {
-      onChange({ 
-        min: min || rangeMin, 
+      onChange({
+        min: min || rangeMin,
         max: max || rangeMax
       })
     } else {
@@ -105,7 +105,7 @@ export function PriceRangeFilter({
   const getSliderStyle = useCallback(() => {
     const minPercent = ((sliderMin - rangeMin) / (rangeMax - rangeMin)) * 100
     const maxPercent = ((sliderMax - rangeMin) / (rangeMax - rangeMin)) * 100
-    
+
     return {
       background: `linear-gradient(to right, 
         #e5e7eb 0%, 
@@ -143,7 +143,7 @@ export function PriceRangeFilter({
             className="absolute w-full h-2 bg-transparent appearance-none cursor-pointer slider-thumb"
             style={{ zIndex: 1 }}
           />
-          
+
           {/* Max Range Slider */}
           <input
             type="range"
@@ -156,7 +156,7 @@ export function PriceRangeFilter({
             style={{ zIndex: 2 }}
           />
         </div>
-        
+
         {/* Range Labels */}
         <div className="flex justify-between mt-2 text-xs text-neutral-500">
           <span>{formatPrice(rangeMin)}</span>
@@ -189,7 +189,7 @@ export function PriceRangeFilter({
             />
           </div>
         </div>
-        
+
         <div>
           <label htmlFor="price-max" className="block text-sm font-medium text-neutral-700 mb-2">
             Maximum Price
@@ -236,11 +236,10 @@ export function PriceRangeFilter({
                 setLocalMax(range.max.toString())
                 onChange({ min: range.min, max: range.max })
               }}
-              className={`px-3 py-2 text-sm border rounded-lg transition-colors duration-200 ${
-                currentRange?.min === range.min && currentRange?.max === range.max
-                  ? 'border-brand-500 bg-brand-50 text-brand-700'
-                  : 'border-neutral-300 text-neutral-700 hover:border-neutral-400 hover:bg-neutral-50'
-              }`}
+              className={`px-3 py-2 text-sm border rounded-lg transition-colors duration-200 ${currentRange?.min === range.min && currentRange?.max === range.max
+                ? 'border-brand-500 bg-brand-50 text-brand-700'
+                : 'border-neutral-300 text-neutral-700 hover:border-neutral-400 hover:bg-neutral-50'
+                }`}
             >
               {range.label}
             </button>
@@ -249,22 +248,6 @@ export function PriceRangeFilter({
       </div>
 
       {/* Action Buttons */}
-      <div className="flex space-x-3 pt-2">
-        <button
-          onClick={handleApply}
-          disabled={!localMin && !localMax}
-          className="flex-1 px-4 py-3 bg-brand-600 text-white rounded-xl hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Apply Filter
-        </button>
-        <button
-          onClick={handleClear}
-          className="px-4 py-3 text-neutral-600 border border-neutral-300 rounded-xl hover:bg-neutral-50 hover:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-500 transition-colors duration-200 text-sm font-medium"
-        >
-          Clear
-        </button>
-      </div>
-
       <style jsx>{`
         .slider-thumb::-webkit-slider-thumb {
           appearance: none;
