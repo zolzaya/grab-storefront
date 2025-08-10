@@ -439,19 +439,6 @@ export default function Products() {
             <div className="bg-white rounded-2xl shadow-soft p-6 space-y-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-neutral-900">Filters</h2>
-                <button 
-                  onClick={() => setFilters({
-                    search: filters.search,
-                    collections: filters.collections,
-                    facets: {},
-                    priceRange: undefined,
-                    availability: [],
-                    rating: undefined
-                  })}
-                  className="text-sm text-brand-600 hover:text-brand-700 font-medium"
-                >
-                  Clear All
-                </button>
               </div>
               
               {/* Price Range Filter */}
@@ -496,6 +483,32 @@ export default function Products() {
                   selectedRating={filters.rating}
                   onChange={handleRatingChange}
                 />
+              </div>
+              
+              {/* Filter Actions */}
+              <div className="pt-4 border-t border-neutral-200 flex flex-col space-y-3">
+                <button 
+                  onClick={() => {
+                    // TODO: Apply filters - this would update URL params and reload data
+                    console.log('Apply filters:', filters)
+                  }}
+                  className="w-full bg-gradient-to-r from-brand-600 to-brand-700 text-white py-3 px-4 rounded-xl font-semibold hover:from-brand-700 hover:to-brand-800 transition-all duration-200 shadow-medium"
+                >
+                  Apply Filters
+                </button>
+                <button 
+                  onClick={() => setFilters({
+                    search: filters.search,
+                    collections: filters.collections,
+                    facets: {},
+                    priceRange: undefined,
+                    availability: [],
+                    rating: undefined
+                  })}
+                  className="w-full bg-neutral-100 text-neutral-700 py-2 px-4 rounded-xl font-medium hover:bg-neutral-200 transition-all duration-200"
+                >
+                  Clear All Filters
+                </button>
               </div>
             </div>
           </aside>
