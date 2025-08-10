@@ -850,6 +850,7 @@ export const GET_CUSTOMER_ORDERS = `
   query GetCustomerOrders($options: OrderListOptions) {
     activeCustomer {
       id
+      emailAddress
       orders(options: $options) {
         items {
           id

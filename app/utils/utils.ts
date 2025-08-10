@@ -6,3 +6,19 @@ export function formatPrice(amount: number) {
     }).format(amount) + "₮"
   )
 }
+
+export function formatPercentage(amount: number) {
+  return Intl.NumberFormat("en-GB", {
+    style: "percent",
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 2,
+  }).format(amount)
+}
+
+export function formatDateMn(date: string | number | Date) {
+  return new Intl.DateTimeFormat("mn-MN", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(new Date(date))
+}

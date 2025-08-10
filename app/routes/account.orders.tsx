@@ -1,82 +1,13 @@
 import type { MetaFunction, LoaderFunctionArgs } from "@remix-run/node"
 import { useLoaderData, Link } from "@remix-run/react"
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { shopApiRequest } from "~/lib/graphql"
 import { GET_CUSTOMER_ORDERS } from "~/lib/queries"
 import { getCurrentUser, requireAuth, getFullName } from "~/lib/auth"
 import type { CurrentUser, CustomerWithOrdersAndAddresses, OrderListOptions } from "~/lib/types"
+import { formatDateMn, formatPrice } from "~/utils/utils"
 
-export const meta: MetaFunction = () => {
-  return [
-    { title: "Order History - My Account" },
-    { name: "description", content: "View your order history and track deliveries" },
-  ]
-}
-
-interface LoaderData {
-  user: CurrentUser
-  customer: CustomerWithOrdersAndAddresses
-  currentPage: number
-  totalPages: number
-}
-
-export async function loader({ request }: LoaderFunctionArgs) {
-  const user = await getCurrentUser(request)
-  requireAuth(user)
-
-  const url = new URL(request.url)
-  const page = parseInt(url.searchParams.get("page") || "1", 10)
-  const limit = 10
-  const skip = (page - 1) * limit
-
-  const options: OrderListOptions = {
-    take: limit,
-    skip,
-    sort: { orderPlacedAt: 'DESC' }
-  }
-
-  try {
-    const { activeCustomer } = await shopApiRequest<{ activeCustomer: CustomerWithOrdersAndAddresses }>(
-      GET_CUSTOMER_ORDERS,
-      { options },
-      request
-    )
-
-    if (!activeCustomer?.orders) {
-      throw new Error("Could not fetch customer orders")
-    }
-
-    const totalPages = Math.ceil(activeCustomer.orders.totalItems / limit)
-
-    return {
-      user,
-      customer: activeCustomer,
-      currentPage: page,
-      totalPages
-    }
-  } catch (error) {
-    console.error('Failed to fetch orders:', error)
-    throw new Response("Failed to load orders", { status: 500 })
-  }
-}
-
-function formatPrice(price: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD'
-  }).format(price / 100)
-}
-
-function formatDate(dateString: string): string {
-  const date = new Date(dateString)
-  return new Intl.DateTimeFormat('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  }).format(date)
-}
-
-function getOrderStatusColor(state: string): string {
+const getOrderStatusColor = (state: string): string => {
   switch (state.toLowerCase()) {
     case 'delivered':
     case 'shipped':
@@ -95,7 +26,7 @@ function getOrderStatusColor(state: string): string {
   }
 }
 
-function getReadableOrderState(state: string): string {
+const getReadableOrderState = (state: string): string => {
   switch (state.toLowerCase()) {
     case 'paymentauthorized': return 'Payment Authorized'
     case 'paymentpartiallyrefunded': return 'Partially Refunded'
@@ -104,11 +35,109 @@ function getReadableOrderState(state: string): string {
   }
 }
 
+// --- Loader ---
+export const meta: MetaFunction = () => [
+  { title: "Order History - My Account" },
+  { name: "description", content: "View your order history and track deliveries" },
+]
+
+interface LoaderData {
+  user: CurrentUser
+  customer: CustomerWithOrdersAndAddresses
+  currentPage: number
+  totalPages: number
+}
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  const user = await getCurrentUser(request)
+  requireAuth(user)
+  const url = new URL(request.url)
+  const page = parseInt(url.searchParams.get("page") || "1", 10)
+  const limit = 10
+  const skip = (page - 1) * limit
+  const options: OrderListOptions = { take: limit, skip, sort: { orderPlacedAt: 'DESC' } }
+
+  try {
+    const { activeCustomer } = await shopApiRequest<{ activeCustomer: CustomerWithOrdersAndAddresses }>(
+      GET_CUSTOMER_ORDERS, { options }, request
+    )
+    if (!activeCustomer?.orders) throw new Error("Could not fetch customer orders")
+    const totalPages = Math.ceil(activeCustomer.orders.totalItems / limit)
+    return { user, customer: activeCustomer, currentPage: page, totalPages }
+  } catch (error) {
+    console.error('Failed to fetch orders:', error)
+    throw new Response("Failed to load orders", { status: 500 })
+  }
+}
+
+// --- OrderDetails Component ---
+function OrderDetails({ order, formatPrice }: { order: any, formatPrice: (n: number) => string }) {
+  return (
+    <div className="mt-8 pt-6 border-t border-neutral-200 animate-fade-in">
+      <h4 className="text-lg font-semibold text-neutral-900 mb-4">Items</h4>
+      <div className="space-y-4">
+        {order.lines.map((line: any) => (
+          <div key={line.id} className="flex items-center space-x-4 p-4 bg-neutral-50 rounded-xl">
+            <div className="flex-shrink-0 w-16 h-16 bg-neutral-200 rounded-lg overflow-hidden">
+              {line.productVariant.product.featuredAsset ? (
+                <img
+                  src={line.productVariant.product.featuredAsset.preview}
+                  alt={line.productVariant.product.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-neutral-300 flex items-center justify-center">
+                  <svg className="w-8 h-8 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+              )}
+            </div>
+            <div className="flex-1">
+              <h5 className="font-semibold text-neutral-900">{line.productVariant.product.name}</h5>
+              <p className="text-sm text-neutral-600">{line.productVariant.name}</p>
+              <p className="text-sm text-neutral-500">SKU: {line.productVariant.sku}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-neutral-500">Qty: {line.quantity}</p>
+              <p className="font-semibold text-neutral-900">{formatPrice(line.linePriceWithTax)}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Shipping Address */}
+      {order.shippingAddress?.fullName && (
+        <div className="mt-6">
+          <h4 className="text-lg font-semibold text-neutral-900 mb-3">Shipping Address</h4>
+          <div className="bg-neutral-50 rounded-xl p-4">
+            <p className="font-medium text-neutral-900">{order.shippingAddress.fullName}</p>
+            {order.shippingAddress.company && (
+              <p className="text-neutral-700">{order.shippingAddress.company}</p>
+            )}
+            <p className="text-neutral-700">{order.shippingAddress.streetLine1}</p>
+            {order.shippingAddress.streetLine2 && (
+              <p className="text-neutral-700">{order.shippingAddress.streetLine2}</p>
+            )}
+            <p className="text-neutral-700">
+              {order.shippingAddress.city}, {order.shippingAddress.province} {order.shippingAddress.postalCode}
+            </p>
+            <p className="text-neutral-700">{order.shippingAddress.country}</p>
+            {order.shippingAddress.phoneNumber && (
+              <p className="text-neutral-700">{order.shippingAddress.phoneNumber}</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// --- Component ---
 export default function Orders() {
   const { user, customer, currentPage, totalPages } = useLoaderData<LoaderData>()
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null)
-
-  const orders = customer.orders?.items || []
+  const orders = useMemo(() => customer.orders?.items || [], [customer.orders])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-white">
@@ -116,8 +145,8 @@ export default function Orders() {
         {/* Header */}
         <div className="mb-12 animate-fade-in-up">
           <div className="flex items-center space-x-4 mb-6">
-            <Link 
-              to="/account" 
+            <Link
+              to="/account"
               className="flex items-center text-neutral-600 hover:text-neutral-900 transition-colors duration-200"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -139,7 +168,7 @@ export default function Orders() {
                   </div>
                   <div>
                     <p className="font-semibold text-neutral-900">{getFullName(user)}</p>
-                    <p className="text-sm text-neutral-600">{user.emailAddress}</p>
+                    <p className="text-sm text-neutral-600">{customer.emailAddress}</p>
                   </div>
                 </div>
               </div>
@@ -173,10 +202,10 @@ export default function Orders() {
           /* Orders List */
           <div className="space-y-8">
             {orders.map((order, index) => (
-              <div 
-                key={order.id} 
+              <div
+                key={order.id}
                 className="bg-white rounded-2xl shadow-large overflow-hidden animate-fade-in-up"
-                style={{animationDelay: `${index * 0.1}s`}}
+                style={{ animationDelay: `${index * 0.1}s` }}
               >
                 <div className="p-8">
                   <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between mb-6">
@@ -190,7 +219,11 @@ export default function Orders() {
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                         <div>
                           <span className="text-neutral-500">Order Date:</span>
-                          <p className="font-medium text-neutral-900">{formatDate(order.orderPlacedAt)}</p>
+                          <p className="font-medium text-neutral-900">{
+                            order.orderPlacedAt ?
+                              formatDateMn(order.orderPlacedAt)
+                              : "-"
+                          }</p>
                         </div>
                         <div>
                           <span className="text-neutral-500">Total:</span>
@@ -220,63 +253,7 @@ export default function Orders() {
 
                   {/* Order Details */}
                   {selectedOrder === order.id && (
-                    <div className="mt-8 pt-6 border-t border-neutral-200 animate-fade-in">
-                      <h4 className="text-lg font-semibold text-neutral-900 mb-4">Order Items</h4>
-                      <div className="space-y-4">
-                        {order.lines.map((line) => (
-                          <div key={line.id} className="flex items-center space-x-4 p-4 bg-neutral-50 rounded-xl">
-                            <div className="flex-shrink-0 w-16 h-16 bg-neutral-200 rounded-lg overflow-hidden">
-                              {line.productVariant.product.featuredAsset ? (
-                                <img
-                                  src={line.productVariant.product.featuredAsset.preview}
-                                  alt={line.productVariant.product.name}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full bg-neutral-300 flex items-center justify-center">
-                                  <svg className="w-8 h-8 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                  </svg>
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex-1">
-                              <h5 className="font-semibold text-neutral-900">{line.productVariant.product.name}</h5>
-                              <p className="text-sm text-neutral-600">{line.productVariant.name}</p>
-                              <p className="text-sm text-neutral-500">SKU: {line.productVariant.sku}</p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-sm text-neutral-500">Qty: {line.quantity}</p>
-                              <p className="font-semibold text-neutral-900">{formatPrice(line.linePriceWithTax)}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Shipping Address */}
-                      {order.shippingAddress && (
-                        <div className="mt-6">
-                          <h4 className="text-lg font-semibold text-neutral-900 mb-3">Shipping Address</h4>
-                          <div className="bg-neutral-50 rounded-xl p-4">
-                            <p className="font-medium text-neutral-900">{order.shippingAddress.fullName}</p>
-                            {order.shippingAddress.company && (
-                              <p className="text-neutral-700">{order.shippingAddress.company}</p>
-                            )}
-                            <p className="text-neutral-700">{order.shippingAddress.streetLine1}</p>
-                            {order.shippingAddress.streetLine2 && (
-                              <p className="text-neutral-700">{order.shippingAddress.streetLine2}</p>
-                            )}
-                            <p className="text-neutral-700">
-                              {order.shippingAddress.city}, {order.shippingAddress.province} {order.shippingAddress.postalCode}
-                            </p>
-                            <p className="text-neutral-700">{order.shippingAddress.country}</p>
-                            {order.shippingAddress.phoneNumber && (
-                              <p className="text-neutral-700">{order.shippingAddress.phoneNumber}</p>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                    <OrderDetails order={order} formatPrice={formatPrice} />
                   )}
                 </div>
               </div>
@@ -293,17 +270,16 @@ export default function Orders() {
                     Previous
                   </Link>
                 )}
-                
+
                 <div className="flex items-center space-x-2">
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                     <Link
                       key={page}
                       to={`/account/orders?page=${page}`}
-                      className={`w-10 h-10 flex items-center justify-center rounded-xl font-medium transition-colors duration-200 ${
-                        page === currentPage
-                          ? 'bg-brand-600 text-white'
-                          : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100'
-                      }`}
+                      className={`w-10 h-10 flex items-center justify-center rounded-xl font-medium transition-colors duration-200 ${page === currentPage
+                        ? 'bg-brand-600 text-white'
+                        : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100'
+                        }`}
                     >
                       {page}
                     </Link>
