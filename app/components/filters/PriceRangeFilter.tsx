@@ -1,12 +1,10 @@
-import { useState, useCallback, useRef, useEffect } from "react"
+import { useCallback, useEffect, useState } from "react"
 import type { PriceRange } from "~/lib/types"
 
 interface PriceRangeFilterProps {
   priceRange?: PriceRange
   currentRange?: PriceRange
   onChange: (range?: PriceRange) => void
-  currency?: string
-  step?: number
   className?: string
 }
 
@@ -14,17 +12,12 @@ export function PriceRangeFilter({
   priceRange,
   currentRange,
   onChange,
-  currency = "$",
-  step = 10,
   className = ""
 }: PriceRangeFilterProps) {
   const [localMin, setLocalMin] = useState(currentRange?.min?.toString() || "")
   const [localMax, setLocalMax] = useState(currentRange?.max?.toString() || "")
   const [sliderMin, setSliderMin] = useState(currentRange?.min || priceRange?.min || 0)
   const [sliderMax, setSliderMax] = useState(currentRange?.max || priceRange?.max || 1000)
-
-  const minInputRef = useRef<HTMLInputElement>(null)
-  const maxInputRef = useRef<HTMLInputElement>(null)
 
   const rangeMin = priceRange?.min || 0
   const rangeMax = priceRange?.max || 1000
@@ -36,38 +29,6 @@ export function PriceRangeFilter({
     setSliderMin(currentRange?.min || rangeMin)
     setSliderMax(currentRange?.max || rangeMax)
   }, [currentRange, rangeMin, rangeMax])
-
-  const handleMinSliderChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = Math.min(Number(e.target.value), sliderMax - step)
-    setSliderMin(value)
-    setLocalMin(value.toString())
-  }, [sliderMax, step])
-
-  const handleMaxSliderChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = Math.max(Number(e.target.value), sliderMin + step)
-    setSliderMax(value)
-    setLocalMax(value.toString())
-  }, [sliderMin, step])
-
-  const handleMinInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    setLocalMin(value)
-
-    const numValue = Number(value)
-    if (!isNaN(numValue) && numValue >= rangeMin && numValue <= rangeMax) {
-      setSliderMin(Math.min(numValue, sliderMax - step))
-    }
-  }, [rangeMin, rangeMax, sliderMax, step])
-
-  const handleMaxInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    setLocalMax(value)
-
-    const numValue = Number(value)
-    if (!isNaN(numValue) && numValue >= rangeMin && numValue <= rangeMax) {
-      setSliderMax(Math.max(numValue, sliderMin + step))
-    }
-  }, [rangeMin, rangeMax, sliderMin, step])
 
   const handleApply = useCallback(() => {
     const min = localMin ? parseFloat(localMin) : undefined
@@ -91,16 +52,6 @@ export function PriceRangeFilter({
     onChange(undefined)
   }, [onChange, rangeMin, rangeMax])
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleApply()
-    }
-  }, [handleApply])
-
-  const formatPrice = useCallback((price: number) => {
-    return `${currency}${price.toLocaleString()}`
-  }, [currency])
-
   // Calculate slider track fill percentage
   const getSliderStyle = useCallback(() => {
     const minPercent = ((sliderMin - rangeMin) / (rangeMax - rangeMin)) * 100
@@ -119,102 +70,6 @@ export function PriceRangeFilter({
 
   return (
     <div className={`space-y-6 ${className}`}>
-      {/* Current Range Display */}
-      <div className="text-center">
-        <div className="text-lg font-semibold text-neutral-900">
-          {formatPrice(sliderMin)} - {formatPrice(sliderMax)}
-        </div>
-        <div className="text-sm text-neutral-500">
-          of {formatPrice(rangeMin)} - {formatPrice(rangeMax)}
-        </div>
-      </div>
-
-      {/* Dual Range Slider */}
-      <div className="relative">
-        <div className="relative h-2 bg-neutral-200 rounded-full" style={getSliderStyle()}>
-          {/* Min Range Slider */}
-          <input
-            type="range"
-            min={rangeMin}
-            max={rangeMax}
-            step={step}
-            value={sliderMin}
-            onChange={handleMinSliderChange}
-            className="absolute w-full h-2 bg-transparent appearance-none cursor-pointer slider-thumb"
-            style={{ zIndex: 1 }}
-          />
-
-          {/* Max Range Slider */}
-          <input
-            type="range"
-            min={rangeMin}
-            max={rangeMax}
-            step={step}
-            value={sliderMax}
-            onChange={handleMaxSliderChange}
-            className="absolute w-full h-2 bg-transparent appearance-none cursor-pointer slider-thumb"
-            style={{ zIndex: 2 }}
-          />
-        </div>
-
-        {/* Range Labels */}
-        <div className="flex justify-between mt-2 text-xs text-neutral-500">
-          <span>{formatPrice(rangeMin)}</span>
-          <span>{formatPrice(rangeMax)}</span>
-        </div>
-      </div>
-
-      {/* Manual Input Fields */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label htmlFor="price-min" className="block text-sm font-medium text-neutral-700 mb-2">
-            Minimum Price
-          </label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-500 text-sm">
-              {currency}
-            </span>
-            <input
-              ref={minInputRef}
-              id="price-min"
-              type="number"
-              value={localMin}
-              onChange={handleMinInputChange}
-              onKeyDown={handleKeyDown}
-              placeholder={rangeMin.toString()}
-              min={rangeMin}
-              max={rangeMax}
-              step={step}
-              className="w-full pl-8 pr-3 py-3 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm transition-colors duration-200"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label htmlFor="price-max" className="block text-sm font-medium text-neutral-700 mb-2">
-            Maximum Price
-          </label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-500 text-sm">
-              {currency}
-            </span>
-            <input
-              ref={maxInputRef}
-              id="price-max"
-              type="number"
-              value={localMax}
-              onChange={handleMaxInputChange}
-              onKeyDown={handleKeyDown}
-              placeholder={rangeMax.toString()}
-              min={rangeMin}
-              max={rangeMax}
-              step={step}
-              className="w-full pl-8 pr-3 py-3 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm transition-colors duration-200"
-            />
-          </div>
-        </div>
-      </div>
-
       {/* Quick Price Ranges */}
       <div>
         <h4 className="text-sm font-medium text-neutral-700 mb-3">Quick Ranges</h4>
