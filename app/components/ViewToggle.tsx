@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-export type ViewMode = 'grid' | 'list' | 'compact' | 'large';
+export type ViewMode = 'grid' | 'list';
 
 interface ViewToggleProps {
   currentView: ViewMode;
@@ -19,24 +19,12 @@ const VIEW_ICONS = {
     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
     </svg>
-  ),
-  compact: (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-    </svg>
-  ),
-  large: (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-    </svg>
   )
 };
 
 const VIEW_LABELS = {
   grid: 'Grid',
-  list: 'List',
-  compact: 'Compact',
-  large: 'Large'
+  list: 'List'
 };
 
 export function ViewToggle({ 
@@ -94,26 +82,10 @@ export function useResponsiveView(baseView: ViewMode): ViewMode {
 
   useEffect(() => {
     const updateView = () => {
-      const width = window.innerWidth;
-      
-      // Mobile: Force compact or list view
-      if (width < 640) {
-        if (baseView === 'grid' || baseView === 'large') {
-          setResponsiveView('compact');
-        } else {
-          setResponsiveView(baseView);
-        }
-      }
-      // Tablet: Limit to grid and list
-      else if (width < 1024) {
-        if (baseView === 'large') {
-          setResponsiveView('grid');
-        } else {
-          setResponsiveView(baseView);
-        }
-      }
-      // Desktop: All views available
-      else {
+      // Mobile: Convert grid to list for better mobile experience
+      if (window.innerWidth < 640 && baseView === 'grid') {
+        setResponsiveView('list');
+      } else {
         setResponsiveView(baseView);
       }
     };
@@ -138,16 +110,6 @@ export const getGridClasses = (view: ViewMode, screenSize: 'mobile' | 'tablet' |
       mobile: 'grid-cols-1',
       tablet: 'grid-cols-1',
       desktop: 'grid-cols-1'
-    },
-    compact: {
-      mobile: 'grid-cols-2',
-      tablet: 'grid-cols-3 lg:grid-cols-4',
-      desktop: 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6'
-    },
-    large: {
-      mobile: 'grid-cols-1',
-      tablet: 'grid-cols-1 lg:grid-cols-2',
-      desktop: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
     }
   };
 

@@ -35,6 +35,12 @@ The project requires these environment variables:
 - `npm run test:watch`: Run tests in watch mode
 - `npm run test:coverage`: Run tests with coverage report
 
+### Running Single Tests
+
+- `npm test -- tests/components/Header.test.tsx`: Run a specific test file
+- `npm test -- --grep "should render"`: Run tests matching a pattern
+- `vitest run --reporter=verbose`: Run tests with detailed output
+
 ## Project Structure
 
 ```
@@ -43,14 +49,31 @@ app/
 │   ├── Header.tsx      # Site header with navigation, mobile menu, search, cart badge
 │   ├── Footer.tsx      # Site footer with links and social proof
 │   ├── ProductCard.tsx # Product display card component with hover effects
-│   └── cart/           # Cart-specific components
-│       ├── FreeShipping.tsx
-│       ├── PaymentMethods.tsx
-│       └── TrustBadges.tsx
+│   ├── SearchBar.tsx   # Enhanced search with autocomplete and suggestions
+│   ├── SortDropdown.tsx # Product sorting dropdown with multiple options
+│   ├── ViewToggle.tsx  # Grid/list view toggle for product display
+│   ├── Pagination.tsx  # Product pagination with page navigation
+│   ├── FilterSidebar.tsx # Comprehensive filtering sidebar
+│   ├── CategoryFilter.tsx # Category navigation and breadcrumbs
+│   ├── CategorySidebar.tsx # Category browsing sidebar
+│   ├── EnhancedSearch.tsx # Advanced search functionality
+│   ├── cart/           # Cart-specific components
+│   │   ├── FreeShipping.tsx
+│   │   ├── PaymentMethods.tsx
+│   │   └── TrustBadges.tsx
+│   └── filters/        # Individual filter components
+│       ├── BrandFilter.tsx      # Brand filtering with logos
+│       ├── ColorFilter.tsx      # Visual color swatches
+│       ├── PriceRangeFilter.tsx # Price range slider
+│       ├── RatingFilter.tsx     # Star rating filter
+│       └── SizeFilter.tsx       # Size selection with charts
 ├── lib/                # Core utilities and configuration
 │   ├── graphql.ts      # GraphQL client setup with cookie forwarding
 │   ├── queries.ts      # All GraphQL queries and mutations for Vendure API
-│   └── types.ts        # TypeScript type definitions matching Vendure schema
+│   ├── types.ts        # TypeScript type definitions matching Vendure schema
+│   ├── auth.ts         # Authentication utilities and validation
+│   ├── constants.ts    # App-wide constants (sort options, filters, etc.)
+│   └── filters.ts      # Filter state management and URL utilities
 ├── routes/             # Remix file-based routing
 │   ├── _index.tsx      # Homepage with hero section and featured products
 │   ├── products._index.tsx  # Product listing with search and pagination
@@ -430,3 +453,131 @@ account/
 - Secure error messages that don't leak account information
 - Automatic session timeout with clear user notification
 - Two-factor authentication support ready for future implementation
+
+## Advanced Product Filtering System
+
+The storefront features a comprehensive filtering system inspired by modern e-commerce platforms:
+
+### Filter Architecture
+- **FilterSidebar**: Main container with collapsible sections
+- **Individual Filter Components**: Modular design in `components/filters/`
+- **URL State Management**: All filters reflected in URL for shareability
+- **Filter State Utilities**: Centralized logic in `lib/filters.ts`
+
+### Available Filters
+- **Price Range**: Dual-handle slider with quick preset ranges
+- **Color**: Visual color swatches with grid/list views
+- **Size**: Smart sorting with size chart integration
+- **Brand**: Logo displays with search functionality
+- **Rating**: Star rating selection with distribution bars
+- **Category**: Hierarchical category navigation
+- **Availability**: In stock, out of stock, backorder filters
+
+### Search Enhancement
+- **Autocomplete**: Real-time product suggestions
+- **Search History**: Local storage of recent searches
+- **Popular Searches**: Trending search terms display
+- **Visual Previews**: Product thumbnails in search results
+- **Filter Integration**: Search within filtered results
+
+## Form Validation System (RVF + Zod)
+
+The project uses `@rvf/remix` with Zod for comprehensive form validation:
+
+### Validation Architecture
+- **Client-side**: Real-time validation with Zod schemas
+- **Server-side**: Same schemas used in Remix actions
+- **Type Safety**: Full TypeScript integration with inferred types
+- **Error Handling**: User-friendly error messages and field highlighting
+
+### Key Dependencies
+- `@rvf/remix`: Form handling and validation hooks
+- `@rvf/zod`: Zod adapter for schema validation
+- `zod`: Schema validation library
+
+### Implementation Pattern
+```typescript
+// Define schema
+const LoginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8)
+})
+
+// Use in component
+const form = useValidatedForm({ schema: LoginSchema })
+```
+
+## Key Architectural Patterns
+
+### GraphQL Client Configuration
+- **Cookie Forwarding**: Automatic session management for SSR
+- **Error Handling**: Centralized error logging and user notifications
+- **Type Safety**: All responses typed with generated Vendure schema types
+- **Request Debugging**: Server-side request logging for development
+
+### Remix Integration Patterns
+- **Parallel Data Loading**: User auth and cart data loaded simultaneously
+- **Form-based Mutations**: All state changes through Remix actions
+- **Cookie Session Management**: Secure session handling with automatic forwarding
+- **Error Boundaries**: Graceful error handling at route and component levels
+
+### Custom Tailwind Design System
+- **Brand Colors**: Extended blue gradient palette with semantic variants
+- **Custom Animations**: Smooth micro-interactions (fade-in, bounce-soft, slide-in)
+- **Shadow System**: Consistent elevation with soft, medium, large variants
+- **Extended Spacing**: Additional values (18, 88, 128, 144) for layout consistency
+- **Custom Keyframes**: Purpose-built animations for e-commerce interactions
+
+## Performance Optimizations
+
+### Loading Strategies
+- **Skeleton Screens**: Progressive loading states for all major components
+- **Image Optimization**: Vendure asset pipeline with responsive images
+- **Code Splitting**: Route-based splitting with Remix's built-in optimization
+- **GraphQL Caching**: Browser caching with proper cache invalidation
+
+### Mobile Performance
+- **Touch Targets**: All interactive elements meet accessibility standards
+- **Responsive Images**: Optimized loading for different screen densities
+- **Mobile-first CSS**: Optimized styles starting from mobile breakpoints
+- **Lazy Loading**: Deferred loading for non-critical components
+
+## Development Workflow
+
+### Before Committing Changes
+1. Run `npm run typecheck` to verify TypeScript compilation
+2. Run `npm run lint` to check code style and catch issues
+3. Run `npm run test` to ensure all tests pass
+4. Test responsive design across breakpoints
+5. Verify GraphQL queries work with your Vendure backend
+
+### Adding New Features
+1. **Planning**: Consider mobile-first design and accessibility
+2. **Types**: Update TypeScript interfaces in `lib/types.ts`
+3. **GraphQL**: Add queries/mutations to `lib/queries.ts`
+4. **Components**: Follow existing patterns and design system
+5. **Testing**: Add unit tests using `@testing-library/react`
+6. **Documentation**: Update CLAUDE.md if architectural changes are made
+
+### Common Gotchas
+- **Cookie Forwarding**: Always pass `request` to server-side GraphQL calls
+- **Type Safety**: Import types from `lib/types.ts`, not generated files
+- **Mobile Design**: Test on actual devices, not just browser dev tools
+- **Session Management**: Handle authentication state changes properly
+- **Filter State**: Use URL parameters for all filter state to enable sharing
+
+## Current Development Tasks
+
+Based on the `todo/` directory, the project has active development in:
+
+### Products Page Enhancement (`todo/search-page.md`)
+- Advanced filtering system with faceted search
+- Enhanced product discovery with multiple view modes
+- Shopify-inspired user experience patterns
+- Mobile-optimized filtering and search
+
+### Form Validation Implementation (`todo/validation.md`)
+- Migration to RVF + Zod validation system
+- Type-safe form handling across all components
+- Client and server-side validation consistency
+- Comprehensive test coverage for validation logic

@@ -388,7 +388,7 @@ export default function Products() {
           <ViewToggle
             currentView={currentView}
             onViewChange={handleViewChange}
-            availableViews={['grid', 'list', 'compact', 'large']}
+            availableViews={['grid', 'list']}
             className="mt-4 lg:mt-0"
           />
         </div>
@@ -406,9 +406,9 @@ export default function Products() {
                   <ProductCard 
                     product={product} 
                     viewMode={responsiveView}
-                    showQuickAdd={responsiveView !== 'compact'}
-                    showWishlist={responsiveView !== 'compact'}
-                    showVariants={responsiveView === 'large'}
+                    showQuickAdd={true}
+                    showWishlist={true}
+                    showVariants={false}
                   />
                 </div>
               ))}
