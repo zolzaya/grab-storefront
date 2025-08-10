@@ -185,24 +185,24 @@ Transform the products page into a fully-featured, Shopify-inspired ecommerce ca
   - [ ] Items per page selector (12, 24, 48, 96)
 - [ ] **Performance optimizations:**
   - [ ] Virtual scrolling for large lists
-  - [ ] Preload next page
+  - [ ] Preload next page /use remix is prefetch/
   - [ ] Scroll position memory
   - [ ] URL-based pagination state
 
 ### 3.3 Advanced Search Features
 
-- [ ] **Search enhancements:**
-  - [ ] Typo tolerance and suggestions
-  - [ ] Search within results
-  - [ ] Search result highlighting
+- [~] **Search enhancements:**
+  - [~] Typo tolerance and suggestions
+  - [~] Search within results
+  - [~] Search result highlighting
 
 ### 3.4 View Options
 
 - [ ] **Multiple display modes:**
-  - [ ] Grid view (2, 3, 4, 5 columns)
+  - [ ] Grid view
   - [ ] List view with detailed info
-  - [ ] Compact list view
-  - [ ] Large image view
+  - [~] Compact list view
+  - [~] Large image view
 - [ ] **Responsive breakpoint adjustments:**
   - [ ] Mobile: 1-2 columns max
   - [ ] Tablet: 2-3 columns
@@ -227,10 +227,10 @@ Transform the products page into a fully-featured, Shopify-inspired ecommerce ca
 
 - [ ] **Touch-friendly search:**
   - [ ] Large search button
-  - [ ] Voice search integration
+  - [~] Voice search integration
   - [ ] Recent searches quick access
-  - [ ] Search suggestions carousel
-  - [ ] Visual search camera button
+  - [~] Search suggestions carousel
+  - [~] Visual search camera button
 
 ### 4.3 Mobile Performance
 
@@ -239,7 +239,7 @@ Transform the products page into a fully-featured, Shopify-inspired ecommerce ca
   - [ ] Skeleton loading states
   - [ ] Touch gestures for sort/filter
   - [ ] Pull-to-refresh functionality
-  - [ ] Offline browsing capability
+  - [~] Offline browsing capability
 
 ---
 
@@ -256,7 +256,7 @@ Transform the products page into a fully-featured, Shopify-inspired ecommerce ca
   - [ ] Lazy loading for images
   - [ ] Memoized filter components
   - [ ] Optimistic updates for filters
-  - [ ] Service worker for caching
+  - [~] Service worker for caching
 
 ### 5.2 URL State Management
 
@@ -269,12 +269,12 @@ Transform the products page into a fully-featured, Shopify-inspired ecommerce ca
 
 ### 5.3 Analytics & Tracking
 
-- [ ] **User behavior tracking:**
-  - [ ] Filter usage analytics
-  - [ ] Search term tracking
-  - [ ] Product view tracking
-  - [ ] Conversion funnel analysis
-  - [ ] A/B testing framework
+- [~] **User behavior tracking:**
+  - [~] Filter usage analytics
+  - [~] Search term tracking
+  - [~] Product view tracking
+  - [~] Conversion funnel analysis
+  - [~] A/B testing framework
 
 ---
 
