@@ -433,7 +433,6 @@ export default function Products() {
               collections={collections}
               currentCollection={collection}
               onCategoryChange={handleCategoryChange}
-              className="sticky top-6"
             />
             
             {/* Facet Filters */}
