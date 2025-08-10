@@ -172,7 +172,6 @@ export const GET_ACTIVE_ORDER = `
         streetLine2
         city
         province
-        postalCode
         countryCode
         phoneNumber
       }
@@ -376,7 +375,6 @@ export const SET_ORDER_SHIPPING_ADDRESS = `
           streetLine2
           city
           province
-          postalCode
           countryCode
           phoneNumber
         }
@@ -403,7 +401,6 @@ export const SET_ORDER_BILLING_ADDRESS = `
           streetLine2
           city
           province
-          postalCode
           countryCode
           phoneNumber
         }
@@ -683,14 +680,13 @@ export const LOGOUT = `
 
 export const ME = `
   query Me {
-    me {
+    activeCustomer {
       id
-      identifier
-      channels {
-        id
-        code
-        token
-      }
+      emailAddress
+      firstName
+      lastName
+      phoneNumber
+      title
     }
   }
 `
@@ -764,7 +760,6 @@ export const CREATE_CUSTOMER_ADDRESS = `
       streetLine2
       city
       province
-      postalCode
       country {
         id
         name
@@ -787,7 +782,6 @@ export const UPDATE_CUSTOMER_ADDRESS = `
       streetLine2
       city
       province
-      postalCode
       country {
         id
         name
@@ -832,7 +826,6 @@ export const GET_CUSTOMER_ADDRESSES = `
         streetLine2
         city
         province
-        postalCode
         country {
           id
           name
@@ -887,7 +880,6 @@ export const GET_CUSTOMER_ORDERS = `
             streetLine2
             city
             province
-            postalCode
             country
             phoneNumber
           }

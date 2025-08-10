@@ -1,13 +1,13 @@
 import { shopApiRequest } from './graphql'
 import { ME, LOGOUT } from './queries'
-import type { CurrentUser } from './types'
+import type { Customer } from './types'
 
 export interface AuthSession {
-  user: CurrentUser | null
+  user: Customer | null
   isAuthenticated: boolean
 }
 
-export async function getCurrentUser(request?: Request): Promise<CurrentUser | null> {
+export async function getCurrentUser(request?: Request): Promise<Customer | null> {
   try {
     // Debug: Log request cookies
     if (request && typeof window === 'undefined') {
@@ -16,15 +16,15 @@ export async function getCurrentUser(request?: Request): Promise<CurrentUser | n
       console.log('getCurrentUser - Full cookie header:', cookies)
     }
 
-    const { me } = await shopApiRequest<{ me: CurrentUser | null }>(
+    const { activeCustomer } = await shopApiRequest<{ activeCustomer: Customer | null }>(
       ME,
       undefined,
       request
     )
     
-    console.log('getCurrentUser - Result:', me ? 'authenticated' : 'not authenticated')
+    console.log('getCurrentUser - Result:', activeCustomer ? 'authenticated' : 'not authenticated')
     
-    return me
+    return activeCustomer
   } catch (error) {
     console.log('Not authenticated or session expired:', error)
     return null
@@ -45,15 +45,25 @@ export async function logout(request?: Request): Promise<boolean> {
   }
 }
 
-export function getFullName(user: CurrentUser | null): string {
+export function getFullName(user: Customer | null): string {
   if (!user) return 'Guest'
 
-  // Fall back to identifier username (usually email)
-  if (user.identifier.includes('@')) {
-    return user.identifier.split('@')[0]
+  // Use first and last name if available
+  if (user.firstName && user.lastName) {
+    return `${user.firstName} ${user.lastName}`
   }
   
-  return user.identifier
+  // Use first name only if available
+  if (user.firstName) {
+    return user.firstName
+  }
+
+  // Fall back to email username
+  if (user.emailAddress.includes('@')) {
+    return user.emailAddress.split('@')[0]
+  }
+  
+  return user.emailAddress
 }
 
 export function validateEmail(email: string): boolean {
@@ -195,7 +205,7 @@ export function getAuthErrorMessage(error: unknown): string {
   return 'An unexpected error occurred'
 }
 
-export function requireAuth(user: CurrentUser | null): CurrentUser {
+export function requireAuth(user: Customer | null): Customer {
   if (!user) {
     throw new Response('Unauthorized', { status: 401 })
   }

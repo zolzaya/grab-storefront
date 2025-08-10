@@ -140,7 +140,6 @@ export interface Address {
   streetLine2?: string
   city?: string
   province?: string
-  postalCode?: string
   countryCode: string
   phoneNumber?: string
   defaultShippingAddress?: boolean
@@ -155,7 +154,6 @@ export interface CreateAddressInput {
   streetLine2?: string
   city?: string
   province?: string
-  postalCode?: string
   countryCode: string
   phoneNumber?: string
   defaultShippingAddress?: boolean
@@ -316,7 +314,6 @@ export interface UpdateAddressInput {
   streetLine2?: string
   city?: string
   province?: string
-  postalCode?: string
   countryCode?: string
   phoneNumber?: string
   defaultShippingAddress?: boolean
@@ -331,7 +328,6 @@ export interface CustomerAddress {
   streetLine2?: string
   city?: string
   province?: string
-  postalCode?: string
   country: Country
   phoneNumber?: string
   defaultShippingAddress?: boolean
@@ -382,9 +378,6 @@ export interface CustomerOrder {
 
 export interface CustomerWithOrdersAndAddresses {
   id: string
-  firstName?: string
-  lastName?: string
-  phoneNumber?: string
   emailAddress: string
   addresses?: CustomerAddress[]
   orders?: {

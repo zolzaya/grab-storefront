@@ -54,7 +54,6 @@ function extractAddressFields(formData: FormData) {
     streetLine2: (formData.get("streetLine2") as string)?.trim(),
     city: (formData.get("city") as string)?.trim(),
     province: (formData.get("province") as string)?.trim(),
-    postalCode: (formData.get("postalCode") as string)?.trim(),
     countryCode: formData.get("countryCode") as string,
     phoneNumber: (formData.get("phoneNumber") as string)?.trim(),
     defaultShippingAddress: formData.get("defaultShippingAddress") === "on",
@@ -63,9 +62,9 @@ function extractAddressFields(formData: FormData) {
 }
 
 function validateAddressFields(fields: ReturnType<typeof extractAddressFields>) {
-  const { fullName, streetLine1, city, postalCode, countryCode } = fields
-  if (!fullName || !streetLine1 || !city || !postalCode || !countryCode) {
-    return "Full name, street address, city, postal code, and country are required"
+  const { fullName, streetLine1, city, countryCode } = fields
+  if (!fullName || !streetLine1 || !city || !countryCode) {
+    return "Full name, street address, city, and country are required"
   }
   return null
 }
@@ -89,7 +88,6 @@ export async function action({ request }: ActionFunctionArgs) {
       streetLine2: fields.streetLine2 || undefined,
       city: fields.city,
       province: fields.province || undefined,
-      postalCode: fields.postalCode,
       countryCode: fields.countryCode,
       phoneNumber: fields.phoneNumber || undefined,
       defaultShippingAddress: fields.defaultShippingAddress,
@@ -177,7 +175,7 @@ function AddressList({
               <div className="text-neutral-600 text-sm space-y-1">
                 <p>{address.streetLine1}</p>
                 {address.streetLine2 && <p>{address.streetLine2}</p>}
-                <p>{address.city}, {address.province} {address.postalCode}</p>
+                <p>{address.city}{address.province ? `, ${address.province}` : ''}</p>
                 <p>{address.country.name}</p>
                 {address.phoneNumber && <p>{address.phoneNumber}</p>}
               </div>
@@ -352,20 +350,6 @@ function AddressForm({
                 defaultValue={actionData?.fields?.province || editingAddress?.province || ''}
                 className="w-full px-4 py-3 border border-neutral-300 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-neutral-400"
                 placeholder="State or Province"
-              />
-            </div>
-            <div>
-              <label htmlFor="postalCode" className="block text-sm font-medium text-neutral-700 mb-2">
-                Postal code *
-              </label>
-              <input
-                id="postalCode"
-                name="postalCode"
-                type="text"
-                required
-                defaultValue={actionData?.fields?.postalCode || editingAddress?.postalCode || ''}
-                className="w-full px-4 py-3 border border-neutral-300 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-neutral-400"
-                placeholder="Postal code"
               />
             </div>
           </div>

@@ -80,6 +80,8 @@ app/
 - **Product Details**: Rich product pages with image galleries, variant selection, and add-to-cart
 - **Shopping Cart**: Complete cart management with free shipping banners and trust badges
 - **Multi-step Checkout**: Customer info → Shipping → Payment → Thank you with upsell products
+  - **Address Selection**: Logged-in users can select from saved addresses or add new ones
+  - **Mongolia-Optimized**: No postal code requirements (not used in Mongolia)
 - **User Authentication**: Complete auth system with login, registration, password reset, and email verification
 - **Account Management**: User dashboard, profile editing, security settings, and order history
 - **Collections**: Browse products by category/collection
@@ -141,6 +143,8 @@ The storefront communicates with Vendure via GraphQL with proper cookie handling
 
 ### Checkout Flow (app/routes/checkout.tsx)
 - Multi-step process: Customer → Shipping → Payment → Thank You
+- **Address Selection**: For logged-in users, displays saved addresses with option to select existing or add new
+- **Mongolia-Specific**: No postal code fields (not used in Mongolia)
 - Progress indicator with step completion states
 - Comprehensive form validation and error handling
 - Upsell product recommendations on thank-you page
@@ -232,6 +236,12 @@ tests/
 - Use the custom animation classes for smooth transitions
 - Ensure mobile-first responsive design
 - Add proper TypeScript interfaces for all props
+
+### Address Management Guidelines
+- **Never include postal code fields** - Mongolia doesn't use postal codes
+- Address forms should only include: Full Name, Street Lines, City, Province (optional), Country, Phone (optional)
+- For checkout: Allow users to select from existing addresses or add new ones
+- Saved addresses are automatically populated from customer's account
 
 ### Testing Requirements
 - Write unit tests for new components using @testing-library/react

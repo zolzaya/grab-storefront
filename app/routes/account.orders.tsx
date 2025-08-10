@@ -4,7 +4,7 @@ import { useState, useMemo } from "react"
 import { shopApiRequest } from "~/lib/graphql"
 import { GET_CUSTOMER_ORDERS } from "~/lib/queries"
 import { getCurrentUser, requireAuth, getFullName } from "~/lib/auth"
-import type { CurrentUser, CustomerWithOrdersAndAddresses, OrderListOptions } from "~/lib/types"
+import type { Customer, CustomerWithOrdersAndAddresses, OrderListOptions } from "~/lib/types"
 import { formatDateMn, formatPrice } from "~/utils/utils"
 
 const getOrderStatusColor = (state: string): string => {
@@ -42,7 +42,7 @@ export const meta: MetaFunction = () => [
 ]
 
 interface LoaderData {
-  user: CurrentUser
+  user: Customer
   customer: CustomerWithOrdersAndAddresses
   currentPage: number
   totalPages: number

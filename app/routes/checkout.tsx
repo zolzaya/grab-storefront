@@ -15,8 +15,12 @@ import {
   TRANSITION_ORDER_TO_STATE,
   GET_ORDER_BY_CODE,
   GET_PRODUCTS,
-  ADD_ITEM_TO_ORDER
+  ADD_ITEM_TO_ORDER,
+  GET_CUSTOMER_ADDRESSES,
+  GET_AVAILABLE_COUNTRIES
 } from "~/lib/queries"
+import { getCurrentUser } from "~/lib/auth"
+import type { CustomerAddress, Country } from "~/lib/types"
 import { formatPrice } from "~/utils/utils"
 
 export const meta: MetaFunction = () => {
@@ -62,7 +66,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const orderCode = url.searchParams.get('orderCode')
 
   try {
-    // Get active order
+    // Get current user and active order
+    const user = await getCurrentUser(request)
     const { activeOrder } = await shopApiRequest<{ activeOrder: { lines: unknown[]; customer?: { id: string } } | null }>(GET_ACTIVE_ORDER, undefined, request)
 
     if (!activeOrder || activeOrder.lines.length === 0) {
@@ -90,7 +95,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
               customerName: orderByCode.customer?.firstName || orderByCode.customer?.emailAddress?.split('@')[0] || 'Valued Customer',
               shippingMethods: [],
               paymentMethods: [],
-              hasCustomer: false
+              hasCustomer: false,
+              customerAddresses: [],
+              countries: []
             }
           }
         } catch (error) {
@@ -100,28 +107,46 @@ export async function loader({ request }: LoaderFunctionArgs) {
       return redirect('/cart')
     }
 
-    // Get shipping methods
-    const { eligibleShippingMethods } = await shopApiRequest<{ eligibleShippingMethods: ShippingMethod[] }>(
-      ELIGIBLE_SHIPPING_METHODS,
-      undefined,
-      request
-    )
+    // Get shipping and payment methods
+    const [shippingResult, paymentResult] = await Promise.all([
+      shopApiRequest<{ eligibleShippingMethods: ShippingMethod[] }>(ELIGIBLE_SHIPPING_METHODS, undefined, request),
+      shopApiRequest<{ eligiblePaymentMethods: PaymentMethod[] }>(ELIGIBLE_PAYMENT_METHODS, undefined, request)
+    ])
 
-    // Get payment methods
-    const { eligiblePaymentMethods } = await shopApiRequest<{ eligiblePaymentMethods: PaymentMethod[] }>(
-      ELIGIBLE_PAYMENT_METHODS,
-      undefined,
-      request
-    )
+    // Get customer addresses and countries if user is logged in
+    let customerAddresses: CustomerAddress[] = []
+    let countries: Country[] = []
+    
+    if (user) {
+      try {
+        const [addressResult, countryResult] = await Promise.all([
+          shopApiRequest<{ activeCustomer: { addresses: CustomerAddress[] } }>(GET_CUSTOMER_ADDRESSES, {}, request),
+          shopApiRequest<{ availableCountries: Country[] }>(GET_AVAILABLE_COUNTRIES, {}, request)
+        ])
+        customerAddresses = addressResult.activeCustomer?.addresses || []
+        countries = countryResult.availableCountries || []
+      } catch (error) {
+        console.error('Failed to load customer data:', error)
+      }
+    } else {
+      try {
+        const { availableCountries } = await shopApiRequest<{ availableCountries: Country[] }>(GET_AVAILABLE_COUNTRIES, {}, request)
+        countries = availableCountries || []
+      } catch (error) {
+        console.error('Failed to load countries:', error)
+      }
+    }
 
     return {
       activeOrder,
       completedOrder: null,
       upsellProducts: [],
       customerName: '',
-      shippingMethods: eligibleShippingMethods,
-      paymentMethods: eligiblePaymentMethods,
-      hasCustomer: !!activeOrder.customer
+      shippingMethods: shippingResult.eligibleShippingMethods,
+      paymentMethods: paymentResult.eligiblePaymentMethods,
+      hasCustomer: !!activeOrder.customer,
+      customerAddresses,
+      countries
     }
   } catch (error) {
     console.error('Failed to load checkout:', error)
@@ -175,17 +200,54 @@ export async function action({ request }: ActionFunctionArgs) {
     }
 
     if (action === "set-shipping-address") {
-      const addressInput = {
-        fullName: formData.get("fullName"),
-        streetLine1: formData.get("streetLine1"),
-        streetLine2: formData.get("streetLine2"),
-        city: formData.get("city"),
-        province: formData.get("province"),
-        countryCode: formData.get("countryCode"),
-        phoneNumber: formData.get("phoneNumber")
+      const useExistingAddress = formData.get("useExistingAddress") === "true"
+      const existingAddressId = formData.get("existingAddressId") as string
+      
+      let addressInput: any
+      
+      if (useExistingAddress && existingAddressId) {
+        // Get the customer addresses to copy the selected address data
+        const user = await getCurrentUser(request)
+        if (user) {
+          try {
+            const { activeCustomer } = await shopApiRequest<{ activeCustomer: { addresses: CustomerAddress[] } }>(
+              GET_CUSTOMER_ADDRESSES, {}, request
+            )
+            const selectedAddress = activeCustomer?.addresses?.find(addr => addr.id === existingAddressId)
+            if (selectedAddress) {
+              addressInput = {
+                fullName: selectedAddress.fullName,
+                streetLine1: selectedAddress.streetLine1,
+                streetLine2: selectedAddress.streetLine2,
+                city: selectedAddress.city,
+                province: selectedAddress.province,
+                countryCode: selectedAddress.country?.code || 'MN',
+                phoneNumber: selectedAddress.phoneNumber
+              }
+              console.log('Using existing address data:', addressInput)
+            } else {
+              return { error: 'Selected address not found' }
+            }
+          } catch (error) {
+            console.error('Failed to load address:', error)
+            return { error: 'Failed to load selected address' }
+          }
+        } else {
+          return { error: 'User not logged in' }
+        }
+      } else {
+        // Create new address
+        addressInput = {
+          fullName: formData.get("fullName"),
+          streetLine1: formData.get("streetLine1"),
+          streetLine2: formData.get("streetLine2"),
+          city: formData.get("city"),
+          province: formData.get("province"),
+          countryCode: formData.get("countryCode"),
+          phoneNumber: formData.get("phoneNumber")
+        }
+        console.log('Setting new shipping address:', addressInput)
       }
-
-      console.log('Setting shipping address:', addressInput)
 
       const result = await shopApiRequest<{ setOrderShippingAddress: { errorCode?: string; message?: string } | unknown }>(SET_ORDER_SHIPPING_ADDRESS, {
         input: addressInput
@@ -237,7 +299,6 @@ export async function action({ request }: ActionFunctionArgs) {
               streetLine2?: string
               city?: string
               province?: string
-              postalCode?: string
               countryCode?: string
               phoneNumber?: string
             }
@@ -428,7 +489,7 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export default function Checkout() {
-  const { activeOrder, completedOrder, upsellProducts, customerName, shippingMethods, paymentMethods, hasCustomer } = useLoaderData<typeof loader>()
+  const { activeOrder, completedOrder, upsellProducts, customerName, shippingMethods, paymentMethods, hasCustomer, customerAddresses, countries } = useLoaderData<typeof loader>()
   const actionData = useActionData<typeof action>()
   const navigation = useNavigation()
 
@@ -511,7 +572,11 @@ export default function Checkout() {
 
               {/* Shipping Address Step */}
               {currentStep === 'shipping' && (
-                <ShippingAddressForm isSubmitting={isSubmitting} />
+                <ShippingAddressForm 
+                  isSubmitting={isSubmitting} 
+                  customerAddresses={customerAddresses}
+                  countries={countries}
+                />
               )}
 
               {/* Shipping Method Step */}
@@ -609,118 +674,220 @@ function CustomerForm({ isSubmitting }: { isSubmitting: boolean }) {
   )
 }
 
-function ShippingAddressForm({ isSubmitting }: { isSubmitting: boolean }) {
+function ShippingAddressForm({ 
+  isSubmitting, 
+  customerAddresses, 
+  countries 
+}: { 
+  isSubmitting: boolean
+  customerAddresses: CustomerAddress[]
+  countries: Country[]
+}) {
+  const [showNewAddressForm, setShowNewAddressForm] = useState(customerAddresses.length === 0)
+  const [selectedAddressId, setSelectedAddressId] = useState(customerAddresses.length > 0 ? customerAddresses[0].id : '')
+
   return (
     <div className="p-8">
       <h2 className="text-2xl font-bold text-neutral-900 mb-6">Shipping Address</h2>
-      <Form method="post" className="space-y-6">
-        <input type="hidden" name="_action" value="set-shipping-address" />
-
-        <div>
-          <label htmlFor="fullName" className="block text-sm font-medium text-neutral-700 mb-2">
-            Full Name *
-          </label>
-          <input
-            type="text"
-            id="fullName"
-            name="fullName"
-            required
-            className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="streetLine1" className="block text-sm font-medium text-neutral-700 mb-2">
-            Address Line 1 *
-          </label>
-          <input
-            type="text"
-            id="streetLine1"
-            name="streetLine1"
-            required
-            className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="streetLine2" className="block text-sm font-medium text-neutral-700 mb-2">
-            Address Line 2
-          </label>
-          <input
-            type="text"
-            id="streetLine2"
-            name="streetLine2"
-            className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label htmlFor="city" className="block text-sm font-medium text-neutral-700 mb-2">
-              City *
-            </label>
-            <input
-              type="text"
-              id="city"
-              name="city"
-              required
-              className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-            />
+      
+      {/* Existing Addresses */}
+      {customerAddresses.length > 0 && (
+        <div className="mb-8">
+          <h3 className="text-lg font-semibold text-neutral-900 mb-4">Choose from your saved addresses</h3>
+          <div className="space-y-4 mb-6">
+            {customerAddresses.map((address) => (
+              <div key={address.id} className="border border-neutral-300 rounded-xl p-4 hover:border-brand-500 cursor-pointer transition-colors">
+                <label className="flex items-start space-x-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="selectedAddress"
+                    value={address.id}
+                    checked={selectedAddressId === address.id}
+                    onChange={() => setSelectedAddressId(address.id)}
+                    className="mt-1 h-4 w-4 text-brand-600 focus:ring-brand-500"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-semibold text-neutral-900">
+                        {address.fullName || 'Unnamed Address'}
+                      </span>
+                      {address.defaultShippingAddress && (
+                        <span className="text-xs bg-brand-100 text-brand-800 px-2 py-1 rounded-full">Default</span>
+                      )}
+                    </div>
+                    <div className="text-neutral-700 text-sm space-y-1">
+                      <div>{address.streetLine1}</div>
+                      {address.streetLine2 && <div>{address.streetLine2}</div>}
+                      <div>
+                        {address.city}
+                        {address.province && `, ${address.province}`}
+                      </div>
+                      <div>{address.country?.name || 'Unknown Country'}</div>
+                      {address.phoneNumber && <div>{address.phoneNumber}</div>}
+                    </div>
+                  </div>
+                </label>
+              </div>
+            ))}
           </div>
 
-          <div>
-            <label htmlFor="province" className="block text-sm font-medium text-neutral-700 mb-2">
-              State/Province
-            </label>
-            <input
-              type="text"
-              id="province"
-              name="province"
-              className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-            />
-          </div>
+          <button
+            type="button"
+            onClick={() => setShowNewAddressForm(!showNewAddressForm)}
+            className="mb-6 flex items-center text-brand-600 hover:text-brand-700 font-medium"
+          >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            {showNewAddressForm ? 'Hide new address form' : 'Add a new address'}
+          </button>
         </div>
+      )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label htmlFor="countryCode" className="block text-sm font-medium text-neutral-700 mb-2">
-              Country *
-            </label>
-            <select
-              id="countryCode"
-              name="countryCode"
-              required
-              defaultValue="MN"
-              className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+      {/* Submit button for existing address */}
+      {customerAddresses.length > 0 && !showNewAddressForm && (
+        <Form method="post" className="mb-6">
+          <input type="hidden" name="_action" value="set-shipping-address" />
+          <input type="hidden" name="useExistingAddress" value="true" />
+          <input type="hidden" name="existingAddressId" value={selectedAddressId} />
+          
+          <button
+            type="submit"
+            disabled={isSubmitting || !selectedAddressId}
+            className="w-full bg-gradient-to-r from-neutral-900 to-neutral-800 text-white py-4 px-6 rounded-2xl font-bold text-lg hover:from-neutral-800 hover:to-neutral-700 transition-all duration-300 shadow-large hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+          >
+            {isSubmitting ? 'Processing...' : 'Continue to Shipping Method'}
+          </button>
+        </Form>
+      )}
+
+      {/* New Address Form */}
+      {showNewAddressForm && (
+        <div>
+          <h3 className="text-lg font-semibold text-neutral-900 mb-4">
+            {customerAddresses.length > 0 ? 'Add a new address' : 'Enter your shipping address'}
+          </h3>
+          
+          <Form method="post" className="space-y-6">
+            <input type="hidden" name="_action" value="set-shipping-address" />
+            <input type="hidden" name="useExistingAddress" value="false" />
+
+            <div>
+              <label htmlFor="fullName" className="block text-sm font-medium text-neutral-700 mb-2">
+                Full Name *
+              </label>
+              <input
+                type="text"
+                id="fullName"
+                name="fullName"
+                required
+                className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="streetLine1" className="block text-sm font-medium text-neutral-700 mb-2">
+                Address Line 1 *
+              </label>
+              <input
+                type="text"
+                id="streetLine1"
+                name="streetLine1"
+                required
+                className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="streetLine2" className="block text-sm font-medium text-neutral-700 mb-2">
+                Address Line 2
+              </label>
+              <input
+                type="text"
+                id="streetLine2"
+                name="streetLine2"
+                className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="city" className="block text-sm font-medium text-neutral-700 mb-2">
+                  City *
+                </label>
+                <input
+                  type="text"
+                  id="city"
+                  name="city"
+                  required
+                  className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="province" className="block text-sm font-medium text-neutral-700 mb-2">
+                  State/Province
+                </label>
+                <input
+                  type="text"
+                  id="province"
+                  name="province"
+                  className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="countryCode" className="block text-sm font-medium text-neutral-700 mb-2">
+                  Country *
+                </label>
+                <select
+                  id="countryCode"
+                  name="countryCode"
+                  required
+                  defaultValue="MN"
+                  className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+                >
+                  {countries.length > 0 ? (
+                    countries.map((country) => (
+                      <option key={country.code} value={country.code}>
+                        {country.name}
+                      </option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="MN">Mongolia</option>
+                      <option value="CN">China</option>
+                      <option value="RU">Russia</option>
+                    </>
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="phoneNumber" className="block text-sm font-medium text-neutral-700 mb-2">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  id="phoneNumber"
+                  name="phoneNumber"
+                  className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full bg-gradient-to-r from-neutral-900 to-neutral-800 text-white py-4 px-6 rounded-2xl font-bold text-lg hover:from-neutral-800 hover:to-neutral-700 transition-all duration-300 shadow-large hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
-              <option value="MN">Mongolia</option>
-              <option value="CN">China</option>
-              <option value="RU">Russia</option>
-              <option value="US">United States</option>
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="phoneNumber" className="block text-sm font-medium text-neutral-700 mb-2">
-              Phone Number
-            </label>
-            <input
-              type="tel"
-              id="phoneNumber"
-              name="phoneNumber"
-              className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
-            />
-          </div>
+              {isSubmitting ? 'Processing...' : 'Continue to Shipping Method'}
+            </button>
+          </Form>
         </div>
-
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full bg-gradient-to-r from-neutral-900 to-neutral-800 text-white py-4 px-6 rounded-2xl font-bold text-lg hover:from-neutral-800 hover:to-neutral-700 transition-all duration-300 shadow-large hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-        >
-          {isSubmitting ? 'Processing...' : 'Continue to Shipping Method'}
-        </button>
-      </Form>
+      )}
     </div>
   )
 }

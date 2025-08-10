@@ -139,11 +139,11 @@ type ProfileUser = {
 }
 
 function ProfileForm({
-  user,
+  customer: customer,
   actionData,
   isSubmitting,
 }: {
-  user: ProfileUser
+  customer: ProfileUser
   actionData: any
   isSubmitting: boolean
 }) {
@@ -185,7 +185,7 @@ function ProfileForm({
                 id="firstName"
                 name="firstName"
                 type="text"
-                defaultValue={actionData?.fields?.firstName || user.firstName || ''}
+                defaultValue={customer?.firstName || ''}
                 className={errorStyles(!!actionData?.error || !!clientError)}
                 placeholder="Enter your first name"
               />
@@ -199,7 +199,7 @@ function ProfileForm({
                 id="lastName"
                 name="lastName"
                 type="text"
-                defaultValue={actionData?.fields?.lastName || user.lastName || ''}
+                defaultValue={customer?.lastName || ''}
                 className={errorStyles(!!actionData?.error || !!clientError)}
                 placeholder="Enter your last name"
               />
@@ -215,7 +215,7 @@ function ProfileForm({
               <input
                 id="email"
                 type="email"
-                value={user.emailAddress}
+                value={customer?.emailAddress}
                 disabled
                 className="w-full px-4 py-3 border border-neutral-300 rounded-xl bg-neutral-100 text-neutral-600 cursor-not-allowed"
               />
@@ -240,7 +240,7 @@ function ProfileForm({
               id="phoneNumber"
               name="phoneNumber"
               type="tel"
-              defaultValue={actionData?.fields?.phoneNumber || user.phoneNumber || ''}
+              defaultValue={customer?.phoneNumber || ''}
               className="w-full px-4 py-3 border border-neutral-300 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-neutral-400"
               placeholder="+1 (555) 123-4567"
             />
@@ -287,7 +287,7 @@ function ProfilePictureCard({ identifier }: { identifier: string }) {
       <h3 className="text-lg font-semibold text-neutral-900 mb-4">Profile Picture</h3>
       <div className="flex flex-col items-center">
         <div className="w-20 h-20 bg-gradient-to-br from-brand-500 to-brand-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold shadow-large mb-4">
-          {identifier.charAt(0).toUpperCase()}
+          {identifier?.charAt(0).toUpperCase()}
         </div>
         {/* <button className="text-brand-600 hover:text-brand-700 font-medium text-sm">
           Upload photo
@@ -365,7 +365,7 @@ function QuickActionsCard() {
 // --- Main ---
 
 export default function Profile() {
-  const { user, customer } = useLoaderData<typeof loader>()
+  const { customer } = useLoaderData<typeof loader>()
   const actionData = useActionData<typeof action>()
   const navigation = useNavigation()
   const isSubmitting = navigation.state === "submitting"
@@ -382,7 +382,7 @@ export default function Profile() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Profile Form */}
           <div className="lg:col-span-2">
-            <ProfileForm user={customer} actionData={actionData} isSubmitting={isSubmitting} />
+            <ProfileForm customer={customer} actionData={actionData} isSubmitting={isSubmitting} />
           </div>
 
           {/* Sidebar */}
