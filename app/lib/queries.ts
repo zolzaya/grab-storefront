@@ -543,8 +543,8 @@ export const GET_ORDER_BY_CODE = `
 
 // Authentication queries and mutations
 export const AUTHENTICATE = `
-  mutation Authenticate($input: AuthenticationInput!) {
-    authenticate(input: $input) {
+  mutation Authenticate($input: AuthenticationInput!, $rememberMe: Boolean) {
+    authenticate(input: $input, rememberMe: $rememberMe) {
       ... on CurrentUser {
         id
         identifier
@@ -686,10 +686,6 @@ export const ME = `
     me {
       id
       identifier
-      firstName
-      lastName
-      phoneNumber
-      emailAddress
       channels {
         id
         code
@@ -808,6 +804,18 @@ export const DELETE_CUSTOMER_ADDRESS = `
   mutation DeleteCustomerAddress($id: ID!) {
     deleteCustomerAddress(id: $id) {
       success
+    }
+  }
+`
+
+export const GET_CUSTOMER_PROFILE = `
+  query GetCustomerProfile {
+    activeCustomer {
+      id
+      firstName
+      lastName
+      phoneNumber
+      emailAddress
     }
   }
 `

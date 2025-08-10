@@ -2,7 +2,7 @@ import type { MetaFunction, LoaderFunctionArgs, ActionFunctionArgs } from "@remi
 import { redirect } from "@remix-run/node"
 import { useLoaderData, useActionData, Form, useNavigation, Link } from "@remix-run/react"
 import { useState } from "react"
-import { shopApiRequest } from "~/lib/graphql"
+import { shopApiRequestWithCookies } from "~/lib/graphql"
 import { AUTHENTICATE } from "~/lib/queries"
 import { getCurrentUser, validateEmail, getAuthErrorMessage } from "~/lib/auth"
 import type { AuthenticateResult } from "~/lib/types"
@@ -50,19 +50,23 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   try {
-    const result = await shopApiRequest<AuthenticateResult>(
+    const { data, response } = await shopApiRequestWithCookies<AuthenticateResult>(
       AUTHENTICATE,
       {
         input: {
-          username: email,
-          password,
-          rememberMe
-        }
+          native: {
+            username: email,
+            password
+          }
+        },
+        rememberMe
       },
       request
     )
 
-    const authResult = result.authenticate
+    const authResult = data.authenticate
+
+    console.log("Auth Result:", JSON.stringify(authResult, null, 2))
 
     if ('errorCode' in authResult) {
       return {
@@ -71,8 +75,22 @@ export async function action({ request }: ActionFunctionArgs) {
       }
     }
 
-    // Success - redirect to intended destination or account page
-    return redirect(redirectTo || '/account')
+    // Success - extract cookies from response and forward them
+    const setCookieHeader = response.headers.get('set-cookie')
+    console.log("Set-Cookie header:", setCookieHeader)
+
+    const redirectResponse = redirect(redirectTo || '/account')
+    
+    // Forward the authentication cookies to the browser
+    if (setCookieHeader) {
+      // If there are multiple Set-Cookie headers, we need to handle them separately
+      const cookieHeaders = response.headers.getSetCookie?.() || [setCookieHeader]
+      cookieHeaders.forEach(cookie => {
+        redirectResponse.headers.append('Set-Cookie', cookie)
+      })
+    }
+
+    return redirectResponse
   } catch (error) {
     console.error('Login error:', error)
     return {

@@ -25,29 +25,33 @@ A modern ecommerce storefront built with Remix, designed to work with Vendure ba
 
 ### Prerequisites
 
-- Node.js 20+ 
+- Node.js 20+
 - A running Vendure backend (see `../backend/` directory)
 
 ### Installation
 
 1. Install dependencies:
+
 ```bash
 npm install
 ```
 
 2. Set up environment variables:
+
 ```bash
 cp .env.example .env
 ```
 
 3. Update the `.env` file with your Vendure backend URL:
+
 ```
-VENDURE_SHOP_API_URL=http://localhost:3000/shop-api
+VENDURE_SHOP_API_URL=http://localhost:4000/shop-api
 ```
 
 ### Development
 
 Start the development server:
+
 ```bash
 npm run dev
 ```
@@ -87,23 +91,26 @@ app/
 The storefront connects to your Vendure backend using GraphQL queries for:
 
 - **Products**: Fetching product listings, details, and search
-- **Collections**: Loading product collections and categories  
+- **Collections**: Loading product collections and categories
 - **Cart**: Managing the shopping cart (add/remove/adjust items)
 - **Orders**: Retrieving the active order/cart state
 
 ## Customization
 
 ### Styling
+
 - Tailwind CSS classes can be customized in `tailwind.config.ts`
 - Custom UI components can be themed and customized
 - Global styles are in `app/tailwind.css`
 
 ### Backend Integration
+
 - GraphQL endpoint is configurable via `VENDURE_SHOP_API_URL`
 - Queries and mutations are in `app/lib/queries.ts`
 - TypeScript types match Vendure's GraphQL schema
 
 ### Components
+
 - All UI components follow consistent design patterns
 - Components are in `app/components/` and can be customized
 - Layout components (Header/Footer) include navigation and branding
@@ -113,7 +120,7 @@ The storefront connects to your Vendure backend using GraphQL queries for:
 This is a standard Remix application that can be deployed to:
 
 - Vercel
-- Netlify  
+- Netlify
 - Railway
 - Render
 - Docker containers

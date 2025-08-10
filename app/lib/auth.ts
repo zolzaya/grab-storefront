@@ -9,14 +9,24 @@ export interface AuthSession {
 
 export async function getCurrentUser(request?: Request): Promise<CurrentUser | null> {
   try {
+    // Debug: Log request cookies
+    if (request && typeof window === 'undefined') {
+      const cookies = request.headers.get('cookie')
+      console.log('getCurrentUser - Request cookies:', cookies ? 'present' : 'none')
+      console.log('getCurrentUser - Full cookie header:', cookies)
+    }
+
     const { me } = await shopApiRequest<{ me: CurrentUser | null }>(
       ME,
       undefined,
       request
     )
+    
+    console.log('getCurrentUser - Result:', me ? 'authenticated' : 'not authenticated')
+    
     return me
   } catch (error) {
-    console.log('Not authenticated or session expired')
+    console.log('Not authenticated or session expired:', error)
     return null
   }
 }
@@ -38,15 +48,12 @@ export async function logout(request?: Request): Promise<boolean> {
 export function getFullName(user: CurrentUser | null): string {
   if (!user) return 'Guest'
 
-  if (user.firstName && user.lastName) {
-    return `${user.firstName} ${user.lastName}`
+  // Fall back to identifier username (usually email)
+  if (user.identifier.includes('@')) {
+    return user.identifier.split('@')[0]
   }
-
-  if (user.firstName) return user.firstName
-  if (user.lastName) return user.lastName
-
-  // Fall back to email username
-  return user.emailAddress.split('@')[0]
+  
+  return user.identifier
 }
 
 export function validateEmail(email: string): boolean {

@@ -3,9 +3,9 @@ import { redirect } from "@remix-run/node"
 import { useLoaderData, useActionData, Form, useNavigation, Link } from "@remix-run/react"
 import { useState } from "react"
 import { shopApiRequest } from "~/lib/graphql"
-import { ME, UPDATE_CUSTOMER } from "~/lib/queries"
+import { GET_CUSTOMER_PROFILE, UPDATE_CUSTOMER } from "~/lib/queries"
 import { getCurrentUser, requireAuth, validateName, validatePhone, formatPhone, getAuthErrorMessage } from "~/lib/auth"
-import type { CurrentUser, UpdateCustomerResult } from "~/lib/types"
+import type { CurrentUser, Customer, UpdateCustomerResult } from "~/lib/types"
 
 export const meta: MetaFunction = () => {
   return [
@@ -18,7 +18,24 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const user = await getCurrentUser(request)
   requireAuth(user)
 
-  return { user }
+  try {
+    const { activeCustomer } = await shopApiRequest<{ activeCustomer: Customer | null }>(
+      GET_CUSTOMER_PROFILE,
+      undefined,
+      request
+    )
+
+    return { 
+      user,
+      customer: activeCustomer 
+    }
+  } catch (error) {
+    console.error('Failed to load customer profile:', error)
+    return { 
+      user,
+      customer: null 
+    }
+  }
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -283,7 +300,7 @@ export default function Profile() {
               <h3 className="text-lg font-semibold text-neutral-900 mb-4">Profile Picture</h3>
               <div className="flex flex-col items-center">
                 <div className="w-20 h-20 bg-gradient-to-br from-brand-500 to-brand-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold shadow-large mb-4">
-                  {user.firstName?.charAt(0) || user.emailAddress.charAt(0).toUpperCase()}
+                  {user.identifier.charAt(0).toUpperCase()}
                 </div>
                 <button className="text-brand-600 hover:text-brand-700 font-medium text-sm">
                   Upload photo

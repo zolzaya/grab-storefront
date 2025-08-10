@@ -277,10 +277,6 @@ export interface OrderStateTransitionError {
 export interface CurrentUser {
   id: string
   identifier: string
-  firstName?: string
-  lastName?: string
-  phoneNumber?: string
-  emailAddress: string
   channels: Channel[]
 }
 

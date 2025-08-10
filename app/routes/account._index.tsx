@@ -34,16 +34,16 @@ export async function loader({ request }: LoaderFunctionArgs) {
       request
     )
 
-    return { 
-      user, 
+    return {
+      user,
       customer: activeCustomer,
       isWelcome: welcomeParam === 'true'
     }
   } catch (error) {
     console.error('Failed to load customer data:', error)
-    return { 
-      user, 
-      customer: null, 
+    return {
+      user,
+      customer: null,
       isWelcome: welcomeParam === 'true'
     }
   }
@@ -51,7 +51,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export default function AccountDashboard() {
   const { user, customer, isWelcome } = useLoaderData<typeof loader>()
-  
+
   const fullName = getFullName(user)
   const recentOrders = customer?.orders?.items || []
   const totalOrders = customer?.orders?.totalItems || 0
@@ -96,7 +96,7 @@ export default function AccountDashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 animate-fade-in-up" style={{animationDelay: '0.1s'}}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
           <Link to="/account/orders" className="group">
             <div className="bg-white rounded-2xl shadow-soft p-6 hover:shadow-large transition-all duration-300 transform hover:-translate-y-1 border-2 border-transparent hover:border-brand-200">
               <div className="flex items-center">
@@ -190,7 +190,7 @@ export default function AccountDashboard() {
         {/* Recent Orders */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-2xl shadow-soft overflow-hidden animate-fade-in-up" style={{animationDelay: '0.2s'}}>
+            <div className="bg-white rounded-2xl shadow-soft overflow-hidden animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
               <div className="px-8 py-6 border-b border-neutral-200 bg-gradient-to-r from-neutral-50 to-white">
                 <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-bold text-neutral-900">Recent Orders</h2>
@@ -206,10 +206,10 @@ export default function AccountDashboard() {
                 {recentOrders.length > 0 ? (
                   <div className="space-y-6">
                     {recentOrders.map((order, index) => (
-                      <div 
-                        key={order.id} 
+                      <div
+                        key={order.id}
                         className="border border-neutral-200 rounded-xl p-6 hover:border-brand-300 transition-colors duration-200"
-                        style={{animationDelay: `${0.3 + index * 0.1}s`}}
+                        style={{ animationDelay: `${0.3 + index * 0.1}s` }}
                       >
                         <div className="flex items-center justify-between mb-4">
                           <div>
@@ -224,12 +224,11 @@ export default function AccountDashboard() {
                           </div>
                           <div className="text-right">
                             <p className="text-lg font-bold text-neutral-900">{formatPrice(order.totalWithTax)}</p>
-                            <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
-                              order.state === 'Delivered' ? 'bg-success-100 text-success-800' :
+                            <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${order.state === 'Delivered' ? 'bg-success-100 text-success-800' :
                               order.state === 'Shipped' ? 'bg-brand-100 text-brand-800' :
-                              order.state === 'PaymentSettled' ? 'bg-warning-100 text-warning-800' :
-                              'bg-neutral-100 text-neutral-800'
-                            }`}>
+                                order.state === 'PaymentSettled' ? 'bg-warning-100 text-warning-800' :
+                                  'bg-neutral-100 text-neutral-800'
+                              }`}>
                               {order.state}
                             </span>
                           </div>
@@ -265,8 +264,8 @@ export default function AccountDashboard() {
                               {order.totalQuantity} {order.totalQuantity === 1 ? 'item' : 'items'}
                             </p>
                           </div>
-                          <Link 
-                            to={`/account/orders/${order.id}`} 
+                          <Link
+                            to={`/account/orders/${order.id}`}
                             className="text-brand-600 hover:text-brand-700 font-medium text-sm"
                           >
                             View details →
@@ -284,8 +283,8 @@ export default function AccountDashboard() {
                     </div>
                     <h3 className="text-lg font-semibold text-neutral-900 mb-2">No orders yet</h3>
                     <p className="text-neutral-600 mb-6">Start shopping to see your orders here</p>
-                    <Link 
-                      to="/products" 
+                    <Link
+                      to="/products"
                       className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-neutral-900 to-neutral-800 text-white font-semibold rounded-xl hover:from-neutral-800 hover:to-neutral-700 transition-all duration-300 shadow-large hover:shadow-xl transform hover:-translate-y-0.5"
                     >
                       Start shopping
@@ -300,7 +299,7 @@ export default function AccountDashboard() {
           </div>
 
           {/* Account Info Sidebar */}
-          <div className="space-y-6 animate-fade-in-up" style={{animationDelay: '0.3s'}}>
+          <div className="space-y-6 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
             {/* Profile Summary */}
             <div className="bg-white rounded-2xl shadow-soft p-6">
               <h3 className="text-lg font-semibold text-neutral-900 mb-4">Profile Summary</h3>
@@ -309,19 +308,19 @@ export default function AccountDashboard() {
                   <svg className="w-5 h-5 text-neutral-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
                   </svg>
-                  <span className="text-sm text-neutral-600">{user.emailAddress}</span>
+                  <span className="text-sm text-neutral-600">{customer?.emailAddress}</span>
                 </div>
-                {user.phoneNumber && (
+                {customer?.phoneNumber && (
                   <div className="flex items-center">
                     <svg className="w-5 h-5 text-neutral-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                     </svg>
-                    <span className="text-sm text-neutral-600">{user.phoneNumber}</span>
+                    <span className="text-sm text-neutral-600">{customer?.phoneNumber}</span>
                   </div>
                 )}
               </div>
-              <Link 
-                to="/account/profile" 
+              <Link
+                to="/account/profile"
                 className="mt-4 inline-flex items-center text-brand-600 hover:text-brand-700 font-medium text-sm"
               >
                 Edit profile →
