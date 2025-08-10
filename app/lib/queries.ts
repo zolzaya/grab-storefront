@@ -123,6 +123,61 @@ export const GET_COLLECTIONS = `
   }
 `
 
+export const GET_COLLECTION_PRODUCTS = `
+  query GetCollectionProducts($slug: String!, $options: ProductListOptions) {
+    collection(slug: $slug) {
+      id
+      name
+      slug
+      productVariants(options: $options) {
+        items {
+          id
+          name
+          price
+          priceWithTax
+          sku
+          stockLevel
+          featuredAsset {
+            id
+            preview
+          }
+          product {
+            id
+            name
+            slug
+            description
+            featuredAsset {
+              id
+              preview
+            }
+            assets {
+              id
+              preview
+            }
+            collections {
+              id
+              name
+              slug
+            }
+            facetValues {
+              id
+              name
+              code
+              facet {
+                id
+                name
+                code
+              }
+            }
+            enabled
+          }
+        }
+        totalItems
+      }
+    }
+  }
+`
+
 export const GET_COLLECTION = `
   query GetCollection($slug: String, $id: ID) {
     collection(slug: $slug, id: $id) {

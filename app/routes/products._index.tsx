@@ -5,9 +5,10 @@ import { ProductCard } from "~/components/ProductCard";
 import { SortDropdown } from "~/components/SortDropdown";
 import { ViewToggle, type ViewMode, getGridClasses, useResponsiveView } from "~/components/ViewToggle";
 import { Pagination, useScrollMemory } from "~/components/Pagination";
+import { CategorySidebar, CategoryBreadcrumbs } from "~/components/CategorySidebar";
 import { shopApiRequest } from "~/lib/graphql";
-import { GET_PRODUCTS } from "~/lib/queries";
-import { ProductList } from "~/lib/types";
+import { GET_PRODUCTS, GET_COLLECTIONS, SEARCH_PRODUCTS } from "~/lib/queries";
+import { ProductList, Collection } from "~/lib/types";
 import { useState, useMemo } from "react";
 
 export const meta: MetaFunction = () => {
@@ -20,6 +21,7 @@ export const meta: MetaFunction = () => {
 export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const search = url.searchParams.get("search") || "";
+  const collection = url.searchParams.get("collection") || "";
   const sort = url.searchParams.get("sort") || "relevance";
   const page = parseInt(url.searchParams.get("page") || "1");
   const limit = parseInt(url.searchParams.get("limit") || "12");
@@ -68,30 +70,111 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
     const sortOptions = getSortOptions(sort);
 
-    const options = {
-      take: limit,
-      skip,
-      ...(sortOptions && { sort: sortOptions }),
-      ...(search && {
-        filter: {
-          name: {
-            contains: search
-          }
-        }
-      })
-    };
+    // Use different approaches for collection filtering vs normal product listing
+    let productsResult;
+    
+    if (collection) {
+      // Use search API for collection filtering - this is more reliable
+      const searchInput = {
+        collectionSlug: collection,
+        groupByProduct: true,
+        take: limit,
+        skip,
+        ...(search && { term: search })
+      };
 
-    const { products } = await shopApiRequest<{ products: ProductList }>(
-      GET_PRODUCTS,
-      { options },
-      request
-    );
+      console.log('Using search API with input:', searchInput);
+
+      const searchResult = await shopApiRequest<{ search: any }>(
+        SEARCH_PRODUCTS,
+        { input: searchInput },
+        request
+      );
+
+      console.log('Search result:', searchResult.search.items.length, 'items found');
+
+      // Transform search results to match ProductList format
+      const transformedProducts = searchResult.search.items.map((item: any) => ({
+        id: item.productId,
+        name: item.productName,
+        slug: item.slug,
+        description: item.description || '',
+        featuredAsset: item.productAsset ? {
+          id: item.productAsset.id,
+          preview: item.productAsset.preview
+        } : null,
+        assets: item.productAsset ? [{
+          id: item.productAsset.id,
+          preview: item.productAsset.preview
+        }] : [],
+        variants: [{
+          id: item.productVariantId || item.productId,
+          name: item.productVariantName || item.productName,
+          price: typeof item.price === 'object' ? item.price.min : item.price,
+          priceWithTax: typeof item.priceWithTax === 'object' ? item.priceWithTax.min : item.priceWithTax,
+          sku: item.sku || '',
+          stockLevel: item.inStock ? 'IN_STOCK' : 'OUT_OF_STOCK',
+          featuredAsset: item.productAsset
+        }],
+        collections: [],
+        facetValues: [],
+        enabled: item.enabled !== false
+      }));
+
+      productsResult = {
+        products: {
+          items: transformedProducts,
+          totalItems: searchResult.search.totalItems
+        }
+      };
+    } else {
+      // Use regular products query
+      const options = {
+        take: limit,
+        skip,
+        ...(sortOptions && { sort: sortOptions }),
+        ...(search && {
+          filter: {
+            name: { contains: search }
+          }
+        })
+      };
+
+      console.log('Using regular products query with options:', options);
+
+      productsResult = await shopApiRequest<{ products: ProductList }>(
+        GET_PRODUCTS,
+        { options },
+        request
+      );
+    }
+
+    // Fetch collections data (if not already fetched)
+    let collectionsData;
+    if (collection) {
+      // Collections already fetched above, get them again to be consistent
+      collectionsData = await shopApiRequest<{ collections: { items: Collection[] } }>(
+        GET_COLLECTIONS,
+        { options: { take: 100 } },
+        request
+      ).catch(() => ({ collections: { items: [] } }));
+    } else {
+      collectionsData = await shopApiRequest<{ collections: { items: Collection[] } }>(
+        GET_COLLECTIONS,
+        { options: { take: 100 } },
+        request
+      ).catch(() => ({ collections: { items: [] } }));
+    }
+    
+    const { products } = productsResult;
     
     return ({ 
       products, 
+      collections: collectionsData.collections.items,
       currentPage: page, 
       totalPages: Math.ceil(products.totalItems / limit),
       search,
+      collection,
       sort,
       view,
       limit
@@ -99,10 +182,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
   } catch (error) {
     console.error('Failed to load products:', error);
     return ({ 
-      products: { items: [], totalItems: 0 }, 
+      products: { items: [], totalItems: 0 },
+      collections: [],
       currentPage: 1, 
       totalPages: 1,
       search,
+      collection,
       sort,
       view,
       limit
@@ -111,7 +196,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export default function Products() {
-  const { products, currentPage, totalPages, search, sort, view, limit } = useLoaderData<typeof loader>();
+  const { products, collections, currentPage, totalPages, search, collection, sort, view, limit } = useLoaderData<typeof loader>();
   const [searchParams, setSearchParams] = useSearchParams();
   const [currentView, setCurrentView] = useState<ViewMode>(view);
   const responsiveView = useResponsiveView(currentView);
@@ -180,6 +265,19 @@ export default function Products() {
     setSearchParams(newParams);
   };
 
+  const handleCategoryChange = (categorySlug: string | null) => {
+    const newParams = new URLSearchParams(searchParams);
+    
+    if (categorySlug) {
+      newParams.set("collection", categorySlug);
+    } else {
+      newParams.delete("collection");
+    }
+    newParams.delete("page"); // Reset to page 1 when changing category
+    
+    setSearchParams(newParams);
+  };
+
   // Calculate grid classes based on responsive view
   const gridClasses = useMemo(() => {
     return getGridClasses(responsiveView);
@@ -188,6 +286,17 @@ export default function Products() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Category Breadcrumbs */}
+        {collection && (
+          <div className="mb-6">
+            <CategoryBreadcrumbs
+              collections={collections}
+              currentCollection={collection}
+              className="text-sm"
+            />
+          </div>
+        )}
+        
         {/* Header Section */}
         <div className="mb-12 animate-fade-in-up">
           <div className="text-center mb-8">
@@ -236,14 +345,31 @@ export default function Products() {
           </div>
         </div>
 
-        {/* Filters and Results Info */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8 p-6 bg-white rounded-2xl shadow-soft">
+        {/* Main Content Layout */}
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Category Sidebar */}
+          <aside className="lg:w-80 flex-shrink-0">
+            <CategorySidebar
+              collections={collections}
+              currentCollection={collection}
+              onCategoryChange={handleCategoryChange}
+              className="sticky top-6"
+            />
+          </aside>
+
+          {/* Products Content */}
+          <main className="flex-1 min-w-0">
+            {/* Filters and Results Info */}
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8 p-6 bg-white rounded-2xl shadow-soft">
           <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-6">
             {/* Results Info */}
             <div className="text-neutral-700">
               <span className="font-semibold">{products.totalItems}</span> products found
               {search && (
                 <span className="text-neutral-500"> for &ldquo;{search}&rdquo;</span>
+              )}
+              {collection && (
+                <span className="text-neutral-500"> in category</span>
               )}
             </div>
             
@@ -308,15 +434,17 @@ export default function Products() {
                 </svg>
               </div>
               <h3 className="text-2xl font-bold text-neutral-900 mb-4">
-                {search ? `No products found for "${search}"` : "No products available"}
+                {search ? `No products found for "${search}"` : collection ? `No products in this category` : "No products available"}
               </h3>
               <p className="text-neutral-600 mb-8">
                 {search 
                   ? "Try adjusting your search terms or browse our categories" 
-                  : "Check back later for new products or contact us for assistance"
+                  : collection
+                    ? "Try browsing other categories or clear your selection"
+                    : "Check back later for new products or contact us for assistance"
                 }
               </p>
-              {search && (
+              {(search || collection) && (
                 <button
                   onClick={() => {
                     const newParams = new URLSearchParams();
@@ -324,12 +452,14 @@ export default function Products() {
                   }}
                   className="bg-gradient-to-r from-brand-600 to-brand-700 text-white px-8 py-3 rounded-xl font-semibold hover:from-brand-700 hover:to-brand-800 transition-all duration-200 shadow-medium"
                 >
-                  Clear Search
+                  {search ? 'Clear Search' : 'Show All Products'}
                 </button>
               )}
             </div>
           </div>
         )}
+          </main>
+        </div>
       </div>
     </div>
   );
