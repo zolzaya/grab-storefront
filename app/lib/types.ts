@@ -37,6 +37,15 @@ export interface Product {
   assets?: Asset[]
   variants: ProductVariant[]
   optionGroups?: ProductOptionGroup[]
+  collections: Collection[]
+  facetValues: FacetValue[]
+  reviewRating?: number
+  reviewCount?: number
+  onSale?: boolean
+  discountPercentage?: number
+  tags?: string[]
+  customFields?: any
+  enabled?: boolean
 }
 
 export interface ProductList {
@@ -113,10 +122,54 @@ export interface ProductListOptions {
     name?: 'ASC' | 'DESC'
     price?: 'ASC' | 'DESC'
     createdAt?: 'ASC' | 'DESC'
+    updatedAt?: 'ASC' | 'DESC'
+    reviewRating?: 'ASC' | 'DESC'
+    reviewCount?: 'ASC' | 'DESC'
+    bestselling?: 'ASC' | 'DESC'
   }
   filter?: {
     name?: {
       contains?: string
+      eq?: string
+      in?: string[]
+    }
+    slug?: {
+      contains?: string
+      eq?: string
+      in?: string[]
+    }
+    description?: {
+      contains?: string
+    }
+    enabled?: {
+      eq?: boolean
+    }
+    facetValueIds?: {
+      in?: string[]
+    }
+    collectionId?: {
+      eq?: string
+      in?: string[]
+    }
+    collectionSlug?: {
+      eq?: string
+      in?: string[]
+    }
+    priceRange?: {
+      min?: number
+      max?: number
+    }
+    stockLevel?: {
+      eq?: string
+      in?: string[]
+    }
+    reviewRating?: {
+      gte?: number
+      lte?: number
+    }
+    tags?: {
+      contains?: string
+      in?: string[]
     }
   }
 }
@@ -486,3 +539,111 @@ export interface EmailAddressConflictError {
 
 // Helper type for ID
 export type ID = string
+
+// Enhanced product page interfaces
+
+export interface Facet {
+  id: string
+  name: string
+  code: string
+  values: FacetValue[]
+}
+
+export interface FacetValue {
+  id: string
+  name: string
+  code: string
+  facet: {
+    id: string
+    name: string
+    code: string
+  }
+}
+
+export interface FacetValueResult {
+  facetValue: FacetValue
+  count: number
+}
+
+export interface PriceRange {
+  min: number
+  max: number
+}
+
+export interface FilterState {
+  search?: string
+  collections?: string[]
+  facets?: { [facetCode: string]: string[] }
+  priceRange?: PriceRange
+  availability?: ('in_stock' | 'out_of_stock' | 'pre_order')[]
+  rating?: number
+  tags?: string[]
+  sort?: string
+  page?: number
+  limit?: number
+}
+
+export interface SortOption {
+  value: string
+  label: string
+  field?: string
+  direction?: 'ASC' | 'DESC'
+}
+
+export interface SearchInput {
+  term?: string
+  groupByProduct?: boolean
+  facetValueFilters?: Array<{
+    and: string[]
+  }>
+  facetValueIds?: string[]
+  facetValueOperator?: 'AND' | 'OR'
+  collectionId?: string
+  collectionSlug?: string
+  skip?: number
+  take?: number
+  sort?: {
+    name?: 'ASC' | 'DESC'
+    price?: 'ASC' | 'DESC'
+  }
+  priceRange?: PriceRange
+  inStock?: boolean
+}
+
+export interface SearchResult {
+  items: SearchResultItem[]
+  totalItems: number
+  facetValues: FacetValueResult[]
+  collections: CollectionResult[]
+}
+
+export interface SearchResultItem {
+  productId: string
+  productName: string
+  productAsset?: Asset
+  price: PriceRange | SinglePrice
+  priceWithTax: PriceRange | SinglePrice
+  sku: string
+  slug: string
+  productVariantId: string
+  productVariantName: string
+  description: string
+  collectionIds: string[]
+  facetIds: string[]
+  facetValueIds: string[]
+  enabled: boolean
+  inStock: boolean
+}
+
+export interface SinglePrice {
+  value: number
+}
+
+export interface CollectionResult {
+  collection: Collection
+  count: number
+}
+
+export interface EnhancedProductList extends ProductList {
+  facetValues: FacetValueResult[]
+}

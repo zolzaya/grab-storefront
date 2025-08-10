@@ -10,6 +10,10 @@ export const GET_PRODUCTS = `
           id
           preview
         }
+        assets {
+          id
+          preview
+        }
         variants {
           id
           name
@@ -22,8 +26,40 @@ export const GET_PRODUCTS = `
             preview
           }
         }
+        collections {
+          id
+          name
+          slug
+        }
+        facetValues {
+          id
+          name
+          code
+          facet {
+            id
+            name
+            code
+          }
+        }
+        customFields
+        enabled
+        reviewRating
+        reviewCount
       }
       totalItems
+      facetValues {
+        facetValue {
+          id
+          name
+          code
+          facet {
+            id
+            name
+            code
+          }
+        }
+        count
+      }
     }
   }
 `
@@ -903,6 +939,154 @@ export const GET_AVAILABLE_COUNTRIES = `
       id
       name
       code
+    }
+  }
+`
+
+// New queries for enhanced products page
+
+export const GET_FACETS = `
+  query GetFacets {
+    facets {
+      items {
+        id
+        name
+        code
+        values {
+          id
+          name
+          code
+        }
+      }
+    }
+  }
+`
+
+export const GET_PRICE_RANGE = `
+  query GetPriceRange($collectionSlug: String) {
+    search(input: {
+      groupByProduct: true
+      collectionSlug: $collectionSlug
+    }) {
+      priceRange {
+        min
+        max
+      }
+    }
+  }
+`
+
+export const GET_PRODUCT_COLLECTIONS = `
+  query GetProductCollections($options: CollectionListOptions) {
+    collections(options: $options) {
+      items {
+        id
+        name
+        slug
+        description
+        featuredAsset {
+          id
+          preview
+        }
+        parent {
+          id
+          name
+          slug
+        }
+        children {
+          id
+          name
+          slug
+        }
+        productVariants(options: { take: 1 }) {
+          totalItems
+        }
+      }
+      totalItems
+    }
+  }
+`
+
+export const GET_POPULAR_SEARCHES = `
+  query GetPopularSearches {
+    search(input: {
+      term: ""
+      groupByProduct: true
+      facetValueFilters: []
+    }) {
+      collections {
+        collection {
+          id
+          name
+          slug
+        }
+        count
+      }
+    }
+  }
+`
+
+export const SEARCH_PRODUCTS = `
+  query SearchProducts($input: SearchInput!) {
+    search(input: $input) {
+      items {
+        productId
+        productName
+        productAsset {
+          id
+          preview
+        }
+        price {
+          ... on PriceRange {
+            min
+            max
+          }
+          ... on SinglePrice {
+            value
+          }
+        }
+        priceWithTax {
+          ... on PriceRange {
+            min
+            max
+          }
+          ... on SinglePrice {
+            value
+          }
+        }
+        sku
+        slug
+        productVariantId
+        productVariantName
+        description
+        collectionIds
+        facetIds
+        facetValueIds
+        enabled
+        inStock
+      }
+      totalItems
+      facetValues {
+        facetValue {
+          id
+          name
+          code
+          facet {
+            id
+            name
+            code
+          }
+        }
+        count
+      }
+      collections {
+        collection {
+          id
+          name
+          slug
+        }
+        count
+      }
     }
   }
 `

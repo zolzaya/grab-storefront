@@ -24,6 +24,8 @@ export const mockProductsResponse: { products: ProductList } = {
             stockLevel: 'IN_STOCK',
           },
         ],
+        collections: [],
+        facetValues: [],
       },
       {
         id: '2',
@@ -44,6 +46,8 @@ export const mockProductsResponse: { products: ProductList } = {
             stockLevel: 'IN_STOCK',
           },
         ],
+        collections: [],
+        facetValues: [],
       },
     ],
     totalItems: 2,
