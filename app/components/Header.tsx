@@ -1,16 +1,19 @@
-import { Link } from '@remix-run/react'
-import { Order } from '~/lib/types'
+import { Link, Form } from '@remix-run/react'
+import { Order, CurrentUser } from '~/lib/types'
 import { useState, useEffect } from 'react'
+import { getFullName } from '~/lib/auth'
 
 interface HeaderProps {
   activeOrder?: Order | null
+  user?: CurrentUser | null
 }
 
-export function Header({ activeOrder }: HeaderProps) {
+export function Header({ activeOrder, user }: HeaderProps) {
   const cartItemsCount = activeOrder?.totalQuantity || 0
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -94,12 +97,105 @@ export function Header({ activeOrder }: HeaderProps) {
                 </svg>
               </button>
 
-              {/* Account */}
-              <button className="p-3 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-xl transition-all duration-200">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </button>
+              {/* User Account */}
+              {user ? (
+                <div className="relative">
+                  <button
+                    className="flex items-center space-x-2 p-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-xl transition-all duration-200"
+                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  >
+                    <div className="w-8 h-8 bg-gradient-to-br from-brand-500 to-brand-600 rounded-lg flex items-center justify-center text-white text-sm font-semibold">
+                      {getFullName(user).charAt(0).toUpperCase()}
+                    </div>
+                    <span className="hidden lg:inline text-sm font-medium">{getFullName(user)}</span>
+                    <svg className={`w-4 h-4 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {/* User Dropdown Menu */}
+                  {isUserMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-large border border-neutral-200 py-2 z-50 animate-fade-in">
+                      <div className="px-4 py-3 border-b border-neutral-200">
+                        <p className="text-sm font-semibold text-neutral-900">{getFullName(user)}</p>
+                        <p className="text-xs text-neutral-600">{user.emailAddress}</p>
+                      </div>
+                      
+                      <div className="py-2">
+                        <Link
+                          to="/account"
+                          className="flex items-center px-4 py-2 text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 transition-colors duration-200"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                          My Account
+                        </Link>
+                        
+                        <Link
+                          to="/account/orders"
+                          className="flex items-center px-4 py-2 text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 transition-colors duration-200"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14a1 1 0 011 1v9a1 1 0 01-1 1H5a1 1 0 01-1-1v-9a1 1 0 011-1z" />
+                          </svg>
+                          My Orders
+                        </Link>
+
+                        <Link
+                          to="/account/addresses"
+                          className="flex items-center px-4 py-2 text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 transition-colors duration-200"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          Addresses
+                        </Link>
+
+                        <Link
+                          to="/account/security"
+                          className="flex items-center px-4 py-2 text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 transition-colors duration-200"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2-2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                          </svg>
+                          Security
+                        </Link>
+                      </div>
+
+                      <div className="border-t border-neutral-200 py-2">
+                        <Form method="post" action="/auth/logout">
+                          <button
+                            type="submit"
+                            className="flex items-center w-full px-4 py-2 text-error-600 hover:bg-error-50 hover:text-error-700 transition-colors duration-200"
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            </svg>
+                            Sign Out
+                          </button>
+                        </Form>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Link
+                  to="/auth/login"
+                  className="flex items-center space-x-2 px-4 py-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-xl transition-all duration-200 font-medium"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  <span className="hidden lg:inline">Sign In</span>
+                </Link>
+              )}
 
               {/* Cart */}
               <Link

@@ -540,3 +540,368 @@ export const GET_ORDER_BY_CODE = `
     }
   }
 `
+
+// Authentication queries and mutations
+export const AUTHENTICATE = `
+  mutation Authenticate($input: AuthenticationInput!) {
+    authenticate(input: $input) {
+      ... on CurrentUser {
+        id
+        identifier
+        channels {
+          id
+          code
+          token
+        }
+      }
+      ... on InvalidCredentialsError {
+        errorCode
+        message
+      }
+      ... on NotVerifiedError {
+        errorCode
+        message
+      }
+    }
+  }
+`
+
+export const REGISTER_CUSTOMER_ACCOUNT = `
+  mutation RegisterCustomerAccount($input: RegisterCustomerInput!) {
+    registerCustomerAccount(input: $input) {
+      ... on Success {
+        success
+      }
+      ... on MissingPasswordError {
+        errorCode
+        message
+      }
+      ... on PasswordValidationError {
+        errorCode
+        message
+        validationErrorMessage
+      }
+      ... on NativeAuthStrategyError {
+        errorCode
+        message
+      }
+    }
+  }
+`
+
+export const VERIFY_CUSTOMER_ACCOUNT = `
+  mutation VerifyCustomerAccount($token: String!, $password: String) {
+    verifyCustomerAccount(token: $token, password: $password) {
+      ... on CurrentUser {
+        id
+        identifier
+        channels {
+          id
+          code
+          token
+        }
+      }
+      ... on VerificationTokenInvalidError {
+        errorCode
+        message
+      }
+      ... on VerificationTokenExpiredError {
+        errorCode
+        message
+      }
+      ... on PasswordValidationError {
+        errorCode
+        message
+        validationErrorMessage
+      }
+      ... on PasswordAlreadySetError {
+        errorCode
+        message
+      }
+      ... on NativeAuthStrategyError {
+        errorCode
+        message
+      }
+    }
+  }
+`
+
+export const REQUEST_PASSWORD_RESET = `
+  mutation RequestPasswordReset($emailAddress: String!) {
+    requestPasswordReset(emailAddress: $emailAddress) {
+      ... on Success {
+        success
+      }
+      ... on NativeAuthStrategyError {
+        errorCode
+        message
+      }
+    }
+  }
+`
+
+export const RESET_PASSWORD = `
+  mutation ResetPassword($token: String!, $password: String!) {
+    resetPassword(token: $token, password: $password) {
+      ... on CurrentUser {
+        id
+        identifier
+        channels {
+          id
+          code
+          token
+        }
+      }
+      ... on PasswordResetTokenInvalidError {
+        errorCode
+        message
+      }
+      ... on PasswordResetTokenExpiredError {
+        errorCode
+        message
+      }
+      ... on PasswordValidationError {
+        errorCode
+        message
+        validationErrorMessage
+      }
+      ... on NativeAuthStrategyError {
+        errorCode
+        message
+      }
+    }
+  }
+`
+
+export const LOGOUT = `
+  mutation Logout {
+    logout {
+      success
+    }
+  }
+`
+
+export const ME = `
+  query Me {
+    me {
+      id
+      identifier
+      firstName
+      lastName
+      phoneNumber
+      emailAddress
+      channels {
+        id
+        code
+        token
+      }
+    }
+  }
+`
+
+export const UPDATE_CUSTOMER = `
+  mutation UpdateCustomer($input: UpdateCustomerInput!) {
+    updateCustomer(input: $input) {
+      ... on Customer {
+        id
+        firstName
+        lastName
+        phoneNumber
+        emailAddress
+      }
+      ... on ErrorResult {
+        errorCode
+        message
+      }
+    }
+  }
+`
+
+export const UPDATE_CUSTOMER_PASSWORD = `
+  mutation UpdateCustomerPassword($currentPassword: String!, $newPassword: String!) {
+    updateCustomerPassword(currentPassword: $currentPassword, newPassword: $newPassword) {
+      ... on Success {
+        success
+      }
+      ... on InvalidCredentialsError {
+        errorCode
+        message
+      }
+      ... on PasswordValidationError {
+        errorCode
+        message
+        validationErrorMessage
+      }
+    }
+  }
+`
+
+export const UPDATE_CUSTOMER_EMAIL_ADDRESS = `
+  mutation UpdateCustomerEmailAddress($password: String!, $newEmailAddress: String!) {
+    updateCustomerEmailAddress(password: $password, newEmailAddress: $newEmailAddress) {
+      ... on Success {
+        success
+      }
+      ... on InvalidCredentialsError {
+        errorCode
+        message
+      }
+      ... on EmailAddressConflictError {
+        errorCode
+        message
+      }
+      ... on NativeAuthStrategyError {
+        errorCode
+        message
+      }
+    }
+  }
+`
+
+export const CREATE_CUSTOMER_ADDRESS = `
+  mutation CreateCustomerAddress($input: CreateAddressInput!) {
+    createCustomerAddress(input: $input) {
+      id
+      fullName
+      company
+      streetLine1
+      streetLine2
+      city
+      province
+      postalCode
+      country {
+        id
+        name
+        code
+      }
+      phoneNumber
+      defaultShippingAddress
+      defaultBillingAddress
+    }
+  }
+`
+
+export const UPDATE_CUSTOMER_ADDRESS = `
+  mutation UpdateCustomerAddress($input: UpdateAddressInput!) {
+    updateCustomerAddress(input: $input) {
+      id
+      fullName
+      company
+      streetLine1
+      streetLine2
+      city
+      province
+      postalCode
+      country {
+        id
+        name
+        code
+      }
+      phoneNumber
+      defaultShippingAddress
+      defaultBillingAddress
+    }
+  }
+`
+
+export const DELETE_CUSTOMER_ADDRESS = `
+  mutation DeleteCustomerAddress($id: ID!) {
+    deleteCustomerAddress(id: $id) {
+      success
+    }
+  }
+`
+
+export const GET_CUSTOMER_ADDRESSES = `
+  query GetCustomerAddresses {
+    activeCustomer {
+      id
+      addresses {
+        id
+        fullName
+        company
+        streetLine1
+        streetLine2
+        city
+        province
+        postalCode
+        country {
+          id
+          name
+          code
+        }
+        phoneNumber
+        defaultShippingAddress
+        defaultBillingAddress
+      }
+    }
+  }
+`
+
+export const GET_CUSTOMER_ORDERS = `
+  query GetCustomerOrders($options: OrderListOptions) {
+    activeCustomer {
+      id
+      orders(options: $options) {
+        items {
+          id
+          code
+          state
+          orderPlacedAt
+          total
+          totalWithTax
+          totalQuantity
+          currencyCode
+          lines {
+            id
+            quantity
+            linePriceWithTax
+            productVariant {
+              id
+              name
+              sku
+              product {
+                id
+                name
+                slug
+                featuredAsset {
+                  id
+                  preview
+                }
+              }
+            }
+          }
+          shippingAddress {
+            fullName
+            company
+            streetLine1
+            streetLine2
+            city
+            province
+            postalCode
+            country
+            phoneNumber
+          }
+          payments {
+            id
+            method
+            amount
+            state
+            metadata
+          }
+        }
+        totalItems
+      }
+    }
+  }
+`
+
+export const GET_AVAILABLE_COUNTRIES = `
+  query GetAvailableCountries {
+    availableCountries {
+      id
+      name
+      code
+    }
+  }
+`

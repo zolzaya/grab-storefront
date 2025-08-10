@@ -1,6 +1,6 @@
 import { GraphQLClient } from 'graphql-request'
 
-const VENDURE_SHOP_API_URL = process.env.VENDURE_SHOP_API_URL || 'http://localhost:3000/shop-api'
+const VENDURE_SHOP_API_URL = process.env.VENDURE_SHOP_API_URL || 'http://localhost:4000/shop-api'
 
 // Create a client factory to handle both server-side and client-side requests
 export const createGraphQLClient = (request?: Request) => {

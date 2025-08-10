@@ -11,7 +11,8 @@ import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { shopApiRequest } from './lib/graphql';
 import { GET_ACTIVE_ORDER } from './lib/queries';
-import { Order } from './lib/types';
+import { getCurrentUser } from './lib/auth';
+import { Order, CurrentUser } from './lib/types';
 
 import "./tailwind.css";
 
@@ -30,16 +31,20 @@ export const links: LinksFunction = () => [
 
 export async function loader({ request }: LoaderFunctionArgs) {
   try {
-    const { activeOrder } = await shopApiRequest<{ activeOrder: Order | null }>(
-      GET_ACTIVE_ORDER,
-      undefined,
-      request
-    );
+    // Get current user and active order in parallel
+    const [user, { activeOrder }] = await Promise.all([
+      getCurrentUser(request),
+      shopApiRequest<{ activeOrder: Order | null }>(
+        GET_ACTIVE_ORDER,
+        undefined,
+        request
+      )
+    ]);
     
-    return { activeOrder };
+    return { activeOrder, user };
   } catch (error) {
-    console.error('Failed to load active order:', error);
-    return { activeOrder: null };
+    console.error('Failed to load root data:', error);
+    return { activeOrder: null, user: null };
   }
 }
 
@@ -62,11 +67,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  const { activeOrder } = useLoaderData<typeof loader>();
+  const { activeOrder, user } = useLoaderData<typeof loader>();
   
   return (
     <>
-      <Header activeOrder={activeOrder} />
+      <Header activeOrder={activeOrder} user={user} />
       <main className="flex-1">
         <Outlet />
       </main>
