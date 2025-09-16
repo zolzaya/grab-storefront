@@ -75,8 +75,8 @@ export default function FacetFilter({
       {/* Collapsible Content */}
       {isExpanded && (
         <div className="space-y-3">
-          {/* Search Input (only show if there are enough options) */}
-          {options.length > 5 && (
+          {/* Search Input (only show if there are many options) */}
+          {options.length > 8 && (
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -93,8 +93,8 @@ export default function FacetFilter({
             </div>
           )}
 
-          {/* Options List */}
-          <div className="space-y-2 max-h-64 overflow-y-auto">
+          {/* Options List - no scrolling, use expand/shrink instead */}
+          <div className="space-y-2">
             {visibleOptions.map((option) => {
               const isSelected = selectedOptions.includes(option.id)
 
@@ -127,12 +127,12 @@ export default function FacetFilter({
 
           {/* Show More/Less Button */}
           {hasMoreOptions && (
-            <div className="pt-2 border-t border-gray-100">
+            <div className="pt-3">
               <button
                 onClick={() => setShowAll(!showAll)}
-                className="flex items-center justify-center w-full py-2 text-xs text-gray-600 hover:text-gray-900 transition-colors"
+                className="flex items-center justify-center w-full py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
               >
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
                 </svg>
                 {showAll ? 'Цөөнийг харуулах' : 'Олныг харуулах'}

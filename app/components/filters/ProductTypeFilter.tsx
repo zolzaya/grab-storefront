@@ -1,3 +1,5 @@
+import { useState, useMemo } from 'react'
+
 export interface ProductTypeOption {
   id: string
   name: string
@@ -20,116 +22,121 @@ export default function ProductTypeFilter({
   className = '',
   title = 'Төрөл'
 }: ProductTypeFilterProps) {
+  const [isExpanded, setIsExpanded] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [showAll, setShowAll] = useState(false)
+
+  // Filter options based on search term
+  const filteredOptions = useMemo(() => {
+    if (!searchTerm) return options
+    return options.filter(option =>
+      option.name.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  }, [options, searchTerm])
+
+  // Show first 10 options by default, or all if showAll is true
+  const visibleOptions = showAll ? filteredOptions : filteredOptions.slice(0, 10)
+  const hasMoreOptions = filteredOptions.length > 10
+
+  if (!options || options.length === 0) {
+    return null
+  }
+
   return (
-    <div className={`space-y-4 ${className}`} role="group" aria-labelledby="product-type-filter-heading">
+    <div className={className} role="group" aria-labelledby="product-type-filter-heading">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-3">
         <h3 id="product-type-filter-heading" className="text-sm font-medium text-gray-900">
           {title}
         </h3>
-        {selectedTypes.length > 0 && (
-          <button
-            onClick={() => selectedTypes.forEach(id => onTypeToggle(id))}
-            className="text-xs text-red-600 hover:text-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 rounded"
-            aria-label={`Clear all selected product types (${selectedTypes.length} selected)`}
-          >
-            Цэвэрлэх
-          </button>
-        )}
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+          aria-expanded={isExpanded}
+          aria-label={isExpanded ? `Collapse ${title} filter` : `Expand ${title} filter`}
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {isExpanded ? (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            )}
+          </svg>
+        </button>
       </div>
 
-      {/* Checkbox Options */}
-      <div className="space-y-3" role="group" aria-label="Product type options">
-        {options.map((option) => {
-          const isSelected = selectedTypes.includes(option.id)
+      {/* Collapsible Content */}
+      {isExpanded && (
+        <div className="space-y-3">
+          {/* Search Input (only show if there are many options) */}
+          {options.length > 8 && (
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="block w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
+                placeholder={`${title} хайх...`}
+              />
+            </div>
+          )}
 
-          return (
-            <label
-              key={option.id}
-              className="flex items-center group cursor-pointer focus-within:ring-2 focus-within:ring-red-500 focus-within:ring-opacity-50 rounded"
-            >
-              {/* Custom Checkbox */}
-              <div className="relative flex-shrink-0">
-                <input
-                  type="checkbox"
-                  checked={isSelected}
-                  onChange={() => onTypeToggle(option.id)}
-                  className="sr-only"
-                  aria-describedby={option.description ? `${option.id}-description` : undefined}
-                  aria-label={`${option.name} (${option.productCount} products)`}
-                />
-                <div
-                  className={`w-4 h-4 rounded border-2 transition-all duration-200 flex items-center justify-center ${
-                    isSelected
-                      ? 'bg-red-600 border-red-600'
-                      : 'bg-white border-gray-300 group-hover:border-gray-400'
-                  }`}
+          {/* Options List - no scrolling, use expand/shrink instead */}
+          <div className="space-y-2">
+            {visibleOptions.map((option) => {
+              const isSelected = selectedTypes.includes(option.id)
+
+              return (
+                <label
+                  key={option.id}
+                  className="flex items-center justify-between py-2 px-1 hover:bg-gray-50 rounded cursor-pointer group"
                 >
-                  {isSelected && (
-                    <svg
-                      className="w-3 h-3 text-white"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  )}
-                </div>
-              </div>
+                  <div className="flex items-center min-w-0 flex-1">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => onTypeToggle(option.id)}
+                      className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                    />
+                    <span className="ml-3 text-sm text-gray-700 group-hover:text-gray-900 truncate">
+                      {option.name}
+                    </span>
+                  </div>
 
-              {/* Label Content */}
-              <div className="ml-3 flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <span
-                    className={`text-sm transition-colors ${
-                      isSelected
-                        ? 'text-red-700 font-medium'
-                        : 'text-gray-700 group-hover:text-gray-900'
-                    }`}
-                  >
-                    {option.name}
+                  <span className="text-sm text-gray-500 ml-2 flex-shrink-0">
+                    {option.productCount}
                   </span>
-                  <span
-                    className={`text-xs ml-2 flex-shrink-0 transition-colors ${
-                      isSelected ? 'text-red-600' : 'text-gray-500'
-                    }`}
-                  >
-                    ({option.productCount.toLocaleString()})
-                  </span>
-                </div>
-
-                {option.description && (
-                  <p
-                    id={`${option.id}-description`}
-                    className="text-xs text-gray-500 mt-0.5 group-hover:text-gray-600"
-                  >
-                    {option.description}
-                  </p>
-                )}
-              </div>
-            </label>
-          )
-        })}
-      </div>
-
-      {/* Selected Summary */}
-      {selectedTypes.length > 0 && (
-        <div className="pt-2 border-t border-gray-200">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">
-              {selectedTypes.length} төрөл сонгосон
-            </span>
-            <button
-              onClick={() => selectedTypes.forEach(id => onTypeToggle(id))}
-              className="text-red-600 hover:text-red-700 transition-colors"
-            >
-              Бүгдийг цэвэрлэх
-            </button>
+                </label>
+              )
+            })}
           </div>
+
+          {/* Show More/Less Button */}
+          {hasMoreOptions && (
+            <div className="pt-3">
+              <button
+                onClick={() => setShowAll(!showAll)}
+                className="flex items-center justify-center w-full py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                </svg>
+                {showAll ? 'Цөөнийг харуулах' : 'Олныг харуулах'}
+              </button>
+            </div>
+          )}
+
+          {/* No Results */}
+          {searchTerm && filteredOptions.length === 0 && (
+            <div className="text-center py-4 text-sm text-gray-500">
+              "{searchTerm}" гэсэн утгаар илэрц олдсонгүй
+            </div>
+          )}
         </div>
       )}
     </div>

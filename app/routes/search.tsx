@@ -8,6 +8,7 @@ import PriceRangeSlider from '~/components/filters/PriceRangeSlider'
 import CategorySidebar from '~/components/filters/CategorySidebar'
 import BrandFilter from '~/components/filters/BrandFilter'
 import ProductTypeFilter from '~/components/filters/ProductTypeFilter'
+import FacetFilter from '~/components/filters/FacetFilter'
 import ProductCard from '~/components/ProductCard'
 import {
   ProductCardSkeleton,
@@ -29,6 +30,8 @@ import {
 import {
   mapFacetValuesToBrands,
   mapFacetValuesToProductTypes,
+  mapFacetValuesByCode,
+  getAvailableFacetTypes,
   buildCategoryTree,
   extractPriceRange
 } from '~/lib/filtering'
@@ -54,6 +57,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     priceMax: searchParams.get('priceMax') ? parseInt(searchParams.get('priceMax')!) : undefined,
     brands: searchParams.get('brands')?.split(',').filter(Boolean) || [],
     productTypes: searchParams.get('productTypes')?.split(',').filter(Boolean) || [],
+    facetValueIds: searchParams.get('fvd')?.split(',').filter(Boolean) || [], // Generic facet value IDs
     sort: searchParams.get('sort') || 'newest',
     collectionId: searchParams.get('collectionId') || undefined,
   }
@@ -73,7 +77,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       skip,
       sort: { name: 'ASC' as const },
       groupByProduct: true,
-      ...(filters.collectionId && { collectionId: filters.collectionId })
+      ...(filters.collectionId && { collectionId: filters.collectionId }),
+      ...(filters.facetValueIds.length > 0 && {
+        facetValueIds: filters.facetValueIds,
+        facetValueOperator: 'OR' as const
+      })
     }
 
     // Fetch search results
@@ -173,9 +181,37 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       }))
     })
 
-    // Extract brands and product types from facets
+    // Extract all available facet types and their options
+    const availableFacetTypes = getAvailableFacetTypes(facetValues)
     const brands = mapFacetValuesToBrands(facetValues)
     const productTypeOptions = mapFacetValuesToProductTypes(facetValues)
+
+    // Map other facet types (excluding 'category' since we already have collection-based categories)
+    const colorOptions = mapFacetValuesByCode(facetValues, 'color')
+    const plantTypeOptions = mapFacetValuesByCode(facetValues, 'plant-type')
+
+    // Helper function to capitalize first letter
+    const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1)
+
+    // Get facet names from backend data for display
+    const facetDisplayNames = {}
+    facetValues.forEach((fv: any) => {
+      const facetCode = fv.facetValue.facet.code
+      const facetName = fv.facetValue.facet.name
+      if (!facetDisplayNames[facetCode]) {
+        facetDisplayNames[facetCode] = capitalize(facetName)
+      }
+    })
+
+    // Log available facets for debugging
+    console.log('Mapped facet options:', {
+      brands: brands.length,
+      productTypes: productTypeOptions.length,
+      colors: colorOptions.length,
+      plantTypes: plantTypeOptions.length,
+      availableFacetTypes: availableFacetTypes.filter(type => type !== 'category'), // Exclude category from available types
+      facetDisplayNames
+    })
 
     // Build category tree from collections
     const categoryTree = buildCategoryTree(collectionsResult.collections?.items || [])
@@ -200,8 +236,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       })
     }
 
-    // Update total products count after client-side filtering
-    const filteredTotalProducts = products.length
+    // Count filtered products for display, but use server total for pagination
+    const filteredProductsCount = products.length
 
     // Build breadcrumbs (empty array since Breadcrumb component handles Home link automatically)
     const breadcrumbs: any[] = []
@@ -219,19 +255,39 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       reviewCount: Math.floor(Math.random() * 50) + 10,
     }))
 
+    // Debug pagination calculation
+    console.log('Pagination debug:', {
+      originalServerTotal: totalProducts,
+      clientFilteredCount: filteredProductsCount,
+      take,
+      calculatedTotalPages: Math.ceil(totalProducts / take),
+      currentPage: page
+    })
+
+    // Debug facet filtering
+    console.log('Facet filtering debug:', {
+      facetValueIds: filters.facetValueIds,
+      searchOptionsUsed: searchOptions
+    })
+
     return {
       products: enhancedProducts,
-      totalProducts: filteredTotalProducts,
+      totalProducts: filteredProductsCount, // Display count (client-side filtered)
+      serverTotalProducts: totalProducts, // Server-side total for pagination
       breadcrumbs,
       priceRange: priceRange,
       brands,
       categoryTree,
       productTypeOptions,
+      colorOptions,
+      plantTypeOptions,
+      availableFacetTypes,
+      facetDisplayNames,
       currentFilters: filters,
       pagination: {
         currentPage: page,
-        totalPages: Math.ceil(filteredTotalProducts / take),
-        hasNextPage: skip + take < filteredTotalProducts,
+        totalPages: Math.ceil(totalProducts / take), // Use server total for pagination
+        hasNextPage: skip + take < totalProducts,
         hasPreviousPage: page > 1,
       }
     }
@@ -264,7 +320,7 @@ export default function SearchPage() {
   const loaderData = useLoaderData<typeof loader>()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const { filters, updatePriceRange, updateSort, toggleBrand, toggleProductType, updateCollection } = useFilters()
+  const { filters, updatePriceRange, updateSort, toggleBrand, toggleProductType, toggleFacetValue, updateCollection } = useFilters()
 
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false)
@@ -312,10 +368,15 @@ export default function SearchPage() {
     products,
     breadcrumbs,
     totalProducts,
+    serverTotalProducts,
     priceRange,
     brands,
     categoryTree,
     productTypeOptions,
+    colorOptions,
+    plantTypeOptions,
+    availableFacetTypes,
+    facetDisplayNames,
     pagination
   } = loaderData
 
@@ -409,31 +470,71 @@ export default function SearchPage() {
                   </div>
 
                   {/* Brand Filter */}
-                  <div>
-                    <BrandFilter
-                      brands={brands}
-                      selectedBrands={filters.brands || []}
-                      onBrandToggle={(brandId) => {
-                        setIsProductsLoading(true)
-                        toggleBrand(brandId)
-                        setTimeout(() => setIsProductsLoading(false), 600)
-                      }}
-                      showProductCount={true}
-                    />
-                  </div>
+                  {brands.length > 0 && (
+                    <div>
+                      <BrandFilter
+                        brands={brands}
+                        selectedBrands={filters.brands || []}
+                        onBrandToggle={(brandId) => {
+                          setIsProductsLoading(true)
+                          toggleBrand(brandId)
+                          setTimeout(() => setIsProductsLoading(false), 600)
+                        }}
+                        showProductCount={true}
+                        title={facetDisplayNames['brand'] || 'Brand'} // Use backend facet name
+                      />
+                    </div>
+                  )}
 
                   {/* Product Type Filters */}
-                  <div>
-                    <ProductTypeFilter
-                      options={productTypeOptions}
-                      selectedTypes={filters.productTypes || []}
-                      onTypeToggle={(typeId) => {
-                        setIsProductsLoading(true)
-                        toggleProductType(typeId)
-                        setTimeout(() => setIsProductsLoading(false), 600)
-                      }}
-                    />
-                  </div>
+                  {productTypeOptions.length > 0 && (
+                    <div>
+                      <ProductTypeFilter
+                        options={productTypeOptions}
+                        selectedTypes={filters.productTypes || []}
+                        onTypeToggle={(typeId) => {
+                          setIsProductsLoading(true)
+                          toggleProductType(typeId)
+                          setTimeout(() => setIsProductsLoading(false), 600)
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  {/* Color Filter */}
+                  {colorOptions.length > 0 && (
+                    <div>
+                      <FacetFilter
+                        title={facetDisplayNames['color'] || 'Color'} // Use backend facet name
+                        facetCode="color"
+                        options={colorOptions}
+                        selectedOptions={filters.facetValueIds || []} // Use generic facet value IDs
+                        onOptionToggle={(facetValueId) => {
+                          setIsProductsLoading(true)
+                          toggleFacetValue(facetValueId)
+                          setTimeout(() => setIsProductsLoading(false), 600)
+                        }}
+                      />
+                    </div>
+                  )}
+
+
+                  {/* Plant Type Filter */}
+                  {plantTypeOptions.length > 0 && (
+                    <div>
+                      <FacetFilter
+                        title={facetDisplayNames['plant-type'] || 'Plant Type'} // Use backend facet name
+                        facetCode="plant-type"
+                        options={plantTypeOptions}
+                        selectedOptions={filters.facetValueIds || []} // Use generic facet value IDs
+                        onOptionToggle={(facetValueId) => {
+                          setIsProductsLoading(true)
+                          toggleFacetValue(facetValueId)
+                          setTimeout(() => setIsProductsLoading(false), 600)
+                        }}
+                      />
+                    </div>
+                  )}
                 </>
               )}
             </div>

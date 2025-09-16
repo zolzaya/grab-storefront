@@ -189,6 +189,28 @@ export function mapFacetValuesToProductTypes(facetValues: any[]): any[] {
 }
 
 /**
+ * Generic function to map facet values by facet code
+ */
+export function mapFacetValuesByCode(facetValues: any[], facetCode: string): any[] {
+  return facetValues
+    .filter(fv => fv.facetValue.facet.code === facetCode)
+    .map(fv => ({
+      id: fv.facetValue.id,
+      name: fv.facetValue.name,
+      productCount: fv.count,
+      code: fv.facetValue.code,
+      description: fv.facetValue.description || '',
+    }))
+}
+
+/**
+ * Get all available facet types from facet values
+ */
+export function getAvailableFacetTypes(facetValues: any[]): string[] {
+  return [...new Set(facetValues.map(fv => fv.facetValue.facet.code))]
+}
+
+/**
  * Extract price range from search results
  */
 export function extractPriceRange(searchResults: any[]): { min: number; max: number } {

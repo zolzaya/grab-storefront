@@ -6,6 +6,7 @@ export interface FilterState {
   priceMax?: number
   brands?: string[]
   productTypes?: string[]
+  facetValueIds?: string[] // Generic facet value IDs for all facet types
   sort?: string
   collectionId?: string
 }
@@ -20,6 +21,7 @@ export function useFilters() {
       priceMax: searchParams.get('priceMax') ? parseInt(searchParams.get('priceMax')!) : undefined,
       brands: searchParams.get('brands')?.split(',').filter(Boolean) || [],
       productTypes: searchParams.get('productTypes')?.split(',').filter(Boolean) || [],
+      facetValueIds: searchParams.get('fvd')?.split(',').filter(Boolean) || [], // Generic facet value IDs
       sort: searchParams.get('sort') || undefined,
       collectionId: searchParams.get('collectionId') || undefined,
     }
@@ -62,6 +64,15 @@ export function useFilters() {
           updated.set('productTypes', newFilters.productTypes.join(','))
         } else {
           updated.delete('productTypes')
+        }
+      }
+
+      // Handle generic facet value IDs
+      if (newFilters.facetValueIds !== undefined) {
+        if (newFilters.facetValueIds.length > 0) {
+          updated.set('fvd', newFilters.facetValueIds.join(','))
+        } else {
+          updated.delete('fvd')
         }
       }
 
@@ -143,6 +154,15 @@ export function useFilters() {
     updateFilters({ collectionId })
   }, [updateFilters])
 
+  // Generic facet value toggle
+  const toggleFacetValue = useCallback((facetValueId: string) => {
+    const currentFacetValueIds = filters.facetValueIds || []
+    const newFacetValueIds = currentFacetValueIds.includes(facetValueId)
+      ? currentFacetValueIds.filter(id => id !== facetValueId)
+      : [...currentFacetValueIds, facetValueId]
+    updateFilters({ facetValueIds: newFacetValueIds })
+  }, [filters.facetValueIds, updateFilters])
+
   return {
     filters,
     updateFilters,
@@ -152,6 +172,7 @@ export function useFilters() {
     updateSort,
     toggleBrand,
     toggleProductType,
+    toggleFacetValue, // Generic facet value toggle
     updateCollection,
     selectCollection,
     clearFilters,
