@@ -35,6 +35,75 @@ import type { ViewMode, SortOption } from '~/components/PageHeader'
 import type { CategoryNode } from '~/components/filters/CategorySidebar'
 import type { ProductTypeOption } from '~/components/filters/ProductTypeFilter'
 
+// Constants
+const SEARCH_CONSTANTS = {
+  PRODUCTS_PER_PAGE: 12,
+  PRICE_RANGE_PRODUCTS_LIMIT: 1000,
+  LOADING_DELAY_MS: 600,
+  PRICE_FILTER_DELAY_MS: 800,
+  FACETS_LIMIT: 100,
+  DEFAULT_PRICE_RANGE: { min: 0, max: 1000000 }
+} as const
+
+// Helper function to capitalize first letter
+const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1)
+
+// Transform search results to product format for ProductCard compatibility
+const transformSearchItemToProduct = (item: any) => {
+  // Handle image asset - check for productAsset or create placeholder
+  const imageAsset = item.productAsset ? {
+    id: item.productAsset.id,
+    preview: item.productAsset.preview
+  } : null
+
+  const price = item.price?.value || item.price?.min || 0
+  const priceWithTax = item.priceWithTax?.value || item.priceWithTax?.min || 0
+
+  return {
+    id: item.productId,
+    name: item.productName,
+    slug: item.slug,
+    description: item.description,
+    featuredAsset: imageAsset,
+    variants: [{
+      id: item.productId + '-variant',
+      name: item.productName,
+      price: price,
+      priceWithTax: priceWithTax,
+      sku: item.sku,
+      stockLevel: 'IN_STOCK',
+      featuredAsset: imageAsset
+    }]
+  }
+}
+
+// Extract facet display names from facet values
+const extractFacetDisplayNames = (facetValues: any[]) => {
+  const facetDisplayNames: { [key: string]: string } = {}
+  facetValues.forEach((fv: any) => {
+    const facetCode = fv.facetValue.facet.code
+    const facetName = fv.facetValue.facet.name
+    if (!facetDisplayNames[facetCode]) {
+      facetDisplayNames[facetCode] = capitalize(facetName)
+    }
+  })
+  return facetDisplayNames
+}
+
+// Calculate total active filter count
+const getActiveFilterCount = (filters: any) => {
+  return (filters.facetValueIds?.length || 0) +
+         (filters.priceMin ? 1 : 0) +
+         (filters.priceMax ? 1 : 0)
+}
+
+// Handle loading state for filter actions
+const handleFilterLoading = (setLoading: (loading: boolean) => void, action: () => void, delay = SEARCH_CONSTANTS.LOADING_DELAY_MS) => {
+  setLoading(true)
+  action()
+  setTimeout(() => setLoading(false), delay)
+}
+
 export const meta: MetaFunction = () => {
   return [
     { title: 'Бүх барааны хайлт | Vendure Storefront' },
@@ -58,7 +127,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 
   const page = parseInt(searchParams.get('page') || '1')
-  const take = 12
+  const take = SEARCH_CONSTANTS.PRODUCTS_PER_PAGE
   const skip = (page - 1) * take
 
   try {
@@ -94,7 +163,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     // Build search parameters for filter options (no user filters except collection)
     const filterOptionsSearchOptions = {
       term: searchTerm,
-      take: 1000, // Get more results to ensure we get all filter options
+      take: SEARCH_CONSTANTS.PRICE_RANGE_PRODUCTS_LIMIT, // Get more results to ensure we get all filter options
       skip: 0,
       sort: { name: 'ASC' as const },
       groupByProduct: true,
@@ -125,7 +194,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
       // Fetch available facets for brand/type filtering
       shopApiRequest<{ facets: any }>(GET_FACETS, {
-        options: { take: 100 }
+        options: { take: SEARCH_CONSTANTS.FACETS_LIMIT }
       }, request).catch(() => ({ facets: { items: [] } })),
     ])
 
@@ -155,33 +224,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 
     // Convert search results to product format for ProductCard compatibility
-    let products = searchItems.map((item: any) => {
-      // Handle image asset - check for productAsset or create placeholder
-      const imageAsset = item.productAsset ? {
-        id: item.productAsset.id,
-        preview: item.productAsset.preview
-      } : null
-
-      const price = item.price?.value || item.price?.min || 0
-      const priceWithTax = item.priceWithTax?.value || item.priceWithTax?.min || 0
-
-      return {
-        id: item.productId,
-        name: item.productName,
-        slug: item.slug,
-        description: item.description,
-        featuredAsset: imageAsset,
-        variants: [{
-          id: item.productId + '-variant',
-          name: item.productName,
-          price: price,
-          priceWithTax: priceWithTax,
-          sku: item.sku,
-          stockLevel: 'IN_STOCK',
-          featuredAsset: imageAsset
-        }]
-      }
-    })
+    let products = searchItems.map(transformSearchItemToProduct)
 
     // Apply client-side price filtering
     if (filters.priceMin || filters.priceMax) {
@@ -220,18 +263,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const colorOptions = mapFacetValuesByCode(facetValues, 'color')
     const plantTypeOptions = mapFacetValuesByCode(facetValues, 'plant-type')
 
-    // Helper function to capitalize first letter
-    const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1)
-
     // Get facet names from backend data for display
-    const facetDisplayNames = {}
-    facetValues.forEach((fv: any) => {
-      const facetCode = fv.facetValue.facet.code
-      const facetName = fv.facetValue.facet.name
-      if (!facetDisplayNames[facetCode]) {
-        facetDisplayNames[facetCode] = capitalize(facetName)
-      }
-    })
+    const facetDisplayNames = extractFacetDisplayNames(facetValues)
 
     // Log available facets for debugging
     console.log('Mapped facet options:', {
@@ -331,7 +364,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       products: [],
       totalProducts: 0,
       breadcrumbs: [{ id: '1', name: 'Бүх бараа', slug: 'all-products' }],
-      priceRange: { min: 0, max: 1000000 },
+      priceRange: SEARCH_CONSTANTS.DEFAULT_PRICE_RANGE,
       brandOptions: [],
       categoryTree: [],
       productTypeOptions: [],
@@ -456,9 +489,9 @@ export default function SearchPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707v4.586a1 1 0 01-.293.707l-2 2A1 1 0 0111 21.586V15.414a1 1 0 00-.293-.707L4.293 8.293A1 1 0 014 7.586V4z" />
             </svg>
             Шүүлтүүр
-            {(filters.facetValueIds?.length || 0) + (filters.priceMin ? 1 : 0) + (filters.priceMax ? 1 : 0) > 0 && (
+            {getActiveFilterCount(filters) > 0 && (
               <span className="ml-2 bg-red-600 text-white text-xs rounded-full px-2 py-1">
-                {(filters.facetValueIds?.length || 0) + (filters.priceMin ? 1 : 0) + (filters.priceMax ? 1 : 0)}
+                {getActiveFilterCount(filters)}
               </span>
             )}
           </button>
@@ -491,11 +524,13 @@ export default function SearchPage() {
                       min={priceRange.min}
                       max={priceRange.max}
                       value={currentPriceRange}
-                      onChange={(value) => {
-                        setIsProductsLoading(true)
-                        updatePriceRange(value[0], value[1], priceRange.min, priceRange.max)
-                        setTimeout(() => setIsProductsLoading(false), 800)
-                      }}
+                      onChange={(value) =>
+                        handleFilterLoading(
+                          setIsProductsLoading,
+                          () => updatePriceRange(value[0], value[1], priceRange.min, priceRange.max),
+                          SEARCH_CONSTANTS.PRICE_FILTER_DELAY_MS
+                        )
+                      }
                       step={1000}
                     />
                   </div>
@@ -508,11 +543,9 @@ export default function SearchPage() {
                         facetCode="brand"
                         options={brandOptions}
                         selectedOptions={filters.facetValueIds || []} // Use generic facet value IDs
-                        onOptionToggle={(facetValueId) => {
-                          setIsProductsLoading(true)
-                          toggleFacetValue(facetValueId)
-                          setTimeout(() => setIsProductsLoading(false), 600)
-                        }}
+                        onOptionToggle={(facetValueId) =>
+                          handleFilterLoading(setIsProductsLoading, () => toggleFacetValue(facetValueId))
+                        }
                       />
                     </div>
                   )}
@@ -526,7 +559,7 @@ export default function SearchPage() {
                         onTypeToggle={(typeId) => {
                           setIsProductsLoading(true)
                           toggleProductType(typeId)
-                          setTimeout(() => setIsProductsLoading(false), 600)
+                          setTimeout(() => setIsProductsLoading(false), SEARCH_CONSTANTS.LOADING_DELAY_MS)
                         }}
                       />
                     </div>
@@ -540,11 +573,9 @@ export default function SearchPage() {
                         facetCode="color"
                         options={colorOptions}
                         selectedOptions={filters.facetValueIds || []} // Use generic facet value IDs
-                        onOptionToggle={(facetValueId) => {
-                          setIsProductsLoading(true)
-                          toggleFacetValue(facetValueId)
-                          setTimeout(() => setIsProductsLoading(false), 600)
-                        }}
+                        onOptionToggle={(facetValueId) =>
+                          handleFilterLoading(setIsProductsLoading, () => toggleFacetValue(facetValueId))
+                        }
                       />
                     </div>
                   )}
@@ -558,11 +589,9 @@ export default function SearchPage() {
                         facetCode="plant-type"
                         options={plantTypeOptions}
                         selectedOptions={filters.facetValueIds || []} // Use generic facet value IDs
-                        onOptionToggle={(facetValueId) => {
-                          setIsProductsLoading(true)
-                          toggleFacetValue(facetValueId)
-                          setTimeout(() => setIsProductsLoading(false), 600)
-                        }}
+                        onOptionToggle={(facetValueId) =>
+                          handleFilterLoading(setIsProductsLoading, () => toggleFacetValue(facetValueId))
+                        }
                       />
                     </div>
                   )}
