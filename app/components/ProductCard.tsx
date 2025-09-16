@@ -66,8 +66,6 @@ function OptimizedImage({
     )
   }
 
-  console.log('OptimizedImage render:', { src, isLoaded, hasError })
-
   return (
     <div className="relative h-full w-full">
       {!isLoaded && !hasError && (
