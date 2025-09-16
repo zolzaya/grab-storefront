@@ -1,166 +1,283 @@
 import { Link } from '@remix-run/react'
 import { Product } from '~/lib/types'
-import { useState } from 'react'
+import React, { useState, useCallback } from 'react'
+import type { ViewMode } from './PageHeader'
 
 interface ProductCardProps {
-  product: Product
+  product: Product & {
+    originalPrice?: number
+    discountPercent?: number
+    installmentPrice?: number
+    bonusAmount?: number
+    stockStatus?: string
+    daysLeft?: number
+    rating?: number
+    reviewCount?: number
+  }
+  viewMode?: ViewMode
 }
 
-export function ProductCard({ product }: ProductCardProps) {
-  const [isWishlisted, setIsWishlisted] = useState(false)
-  const [isHovered, setIsHovered] = useState(false)
-  const price = product.variants[0]?.priceWithTax || 0
-  const originalPrice = price * 1.2 // Simulate a sale price
-  const formattedPrice = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-  }).format(price / 100)
-  
-  const formattedOriginalPrice = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-  }).format(originalPrice / 100)
+function OptimizedImage({
+  src,
+  alt,
+  className,
+  fallback
+}: {
+  src: string
+  alt: string
+  className?: string
+  fallback?: React.ReactNode
+}) {
+  const [isLoaded, setIsLoaded] = useState(false)
+  const [hasError, setHasError] = useState(false)
+  const [currentSrc, setCurrentSrc] = useState(src)
 
-  const isOnSale = Math.random() > 0.7 // 30% chance of being on sale
-  const discount = Math.round(((originalPrice - price) / originalPrice) * 100)
+  // Reset states when src changes
+  React.useEffect(() => {
+    if (currentSrc !== src) {
+      console.log('Source changed from', currentSrc, 'to', src)
+      setIsLoaded(false)
+      setHasError(false)
+      setCurrentSrc(src)
+    }
+  }, [src, currentSrc])
+
+  const handleLoad = useCallback(() => {
+    console.log('Image loaded successfully:', src, 'Setting isLoaded to true')
+    setIsLoaded(true)
+  }, [src])
+
+  const handleError = useCallback(() => {
+    console.log('Image failed to load:', src)
+    setHasError(true)
+    setIsLoaded(true)
+  }, [src])
+
+  if (hasError) {
+    return fallback || (
+      <div className="h-full w-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+        <div className="text-gray-400 text-center">
+          <svg className="mx-auto h-12 w-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <span className="text-sm">No image</span>
+        </div>
+      </div>
+    )
+  }
+
+  console.log('OptimizedImage render:', { src, isLoaded, hasError })
 
   return (
-    <div 
-      className="group relative bg-white rounded-2xl shadow-soft hover:shadow-medium transition-all duration-300 animate-fade-in-up overflow-hidden"
+    <div className="relative h-full w-full">
+      {!isLoaded && !hasError && (
+        <div className="absolute inset-0 bg-blue-200 animate-pulse z-10" />
+      )}
+      <img
+        src={src}
+        alt={alt}
+        className={`${className} transition-opacity duration-300 relative z-20`}
+        style={{ opacity: isLoaded ? 1 : 0 }}
+        onLoad={handleLoad}
+        onError={handleError}
+        loading="lazy"
+        decoding="async"
+      />
+    </div>
+  )
+}
+
+export default function ProductCard({ product, viewMode = 'grid' }: ProductCardProps) {
+  // Get the best available image - try product featuredAsset first, then variant featuredAsset
+  const getProductImage = () => {
+    if (product.featuredAsset?.preview) {
+      return product.featuredAsset.preview
+    }
+    if (product.variants?.[0]?.featuredAsset?.preview) {
+      return product.variants[0].featuredAsset.preview
+    }
+    // Temporary fallback for testing - show placeholder for products without images
+    return 'https://via.placeholder.com/300x300/e2e8f0/64748b?text=' + encodeURIComponent(product.name || 'Product')
+  }
+
+  const imageUrl = getProductImage()
+
+
+  const [isWishlisted, setIsWishlisted] = useState(false)
+  const [isHovered, setIsHovered] = useState(false)
+
+  const price = product.variants[0]?.priceWithTax || 0
+  const originalPrice = product.originalPrice || price * 1.3
+  const discountPercent = product.discountPercent || Math.floor(Math.random() * 40) + 10
+  const isOnSale = discountPercent > 0
+
+  // Format price in Mongolian Tugrik
+  const formatPrice = (amount: number) => {
+    return new Intl.NumberFormat('mn-MN').format(amount) + '₮'
+  }
+
+  const formattedPrice = formatPrice(price)
+  const formattedOriginalPrice = formatPrice(originalPrice)
+
+  if (viewMode === 'list') {
+    return (
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow">
+        <div className="flex items-center gap-4">
+          {/* Image */}
+          <div className="relative w-24 h-24 flex-shrink-0">
+            {imageUrl ? (
+              <OptimizedImage
+                src={imageUrl.startsWith('https://via.placeholder.com') ? imageUrl : imageUrl + '?preset=medium'}
+                alt={product.name}
+                className="w-full h-full object-cover rounded-lg"
+              />
+            ) : (
+              <div className="w-full h-full bg-red-200 rounded-lg flex items-center justify-center">
+                <span className="text-gray-400 text-xs">No image</span>
+              </div>
+            )}
+            {isOnSale && (
+              <div className="absolute -top-2 -right-2">
+                <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                  -{discountPercent}%
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            <Link to={`/products/${product.slug}`} className="block">
+              <h3 className="font-medium text-gray-900 truncate hover:text-blue-600">
+                {product.name}
+              </h3>
+              <div className="mt-1 flex items-center gap-2">
+                <span className="text-lg font-bold text-gray-900">{formattedPrice}</span>
+                {isOnSale && (
+                  <span className="text-sm text-gray-500 line-through">{formattedOriginalPrice}</span>
+                )}
+              </div>
+              <div className="mt-2 flex items-center justify-between text-sm text-gray-500">
+                <span>В наличии</span>
+                <div className="flex items-center gap-1">
+                  <div className="flex text-yellow-400">
+                    {'★'.repeat(product.rating || 4)}
+                    {'☆'.repeat(5 - (product.rating || 4))}
+                  </div>
+                  <span>({product.reviewCount || 0})</span>
+                </div>
+              </div>
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div
+      className="group relative bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 overflow-hidden"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       <Link to={`/products/${product.slug}`} className="block">
-        {/* Sale Badge */}
+        {/* Discount Badge */}
         {isOnSale && (
           <div className="absolute top-3 left-3 z-10">
-            <span className="bg-error-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-              -{discount}%
+            <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-md">
+              -{discountPercent}%
             </span>
           </div>
         )}
 
-        {/* Wishlist Button */}
-        <button
-          className={`absolute top-3 right-3 z-10 p-2 rounded-full transition-all duration-200 ${
-            isWishlisted 
-              ? 'bg-error-500 text-white shadow-medium' 
-              : 'bg-white/90 backdrop-blur-sm text-neutral-600 hover:bg-white hover:text-error-500'
-          } ${isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
-          onClick={(e) => {
-            e.preventDefault()
-            setIsWishlisted(!isWishlisted)
-          }}
-        >
-          <svg className="w-4 h-4" fill={isWishlisted ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-          </svg>
-        </button>
+        {/* Countdown Timer */}
+        {product.daysLeft && (
+          <div className="absolute top-3 right-3 z-10">
+            <div className="bg-red-100 text-red-700 text-xs font-medium px-2 py-1 rounded-md">
+              Хямдрал дуусах {product.daysLeft} өдөр
+            </div>
+          </div>
+        )}
 
         {/* Product Image */}
-        <div className="relative aspect-square overflow-hidden bg-neutral-100 rounded-t-2xl">
-          {product.featuredAsset ? (
-            <img
-              src={product.featuredAsset.preview + '?preset=medium'}
+        <div className="relative aspect-square overflow-hidden bg-red-100">
+          {imageUrl ? (
+            <OptimizedImage
+              src={imageUrl.startsWith('https://via.placeholder.com') ? imageUrl : imageUrl + '?preset=medium'}
               alt={product.name}
-              className="h-full w-full object-cover object-center group-hover:scale-110 transition-transform duration-500"
+              className="h-full w-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
             />
           ) : (
-            <div className="h-full w-full bg-gradient-to-br from-neutral-100 to-neutral-200 flex items-center justify-center">
-              <div className="text-neutral-400 text-center">
+            <div className="h-full w-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+              <div className="text-gray-400 text-center">
                 <svg className="mx-auto h-12 w-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                <span className="text-sm font-medium">No image</span>
+                <span className="text-sm">No image</span>
               </div>
             </div>
           )}
-          
-          {/* Quick add button - appears on hover */}
-          <div className={`absolute inset-x-4 bottom-4 transition-all duration-300 ${
-            isHovered ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
-          }`}>
-            <button className="w-full bg-neutral-900 text-white py-3 px-4 text-sm font-semibold rounded-xl hover:bg-neutral-800 transition-colors duration-200 shadow-large">
-              Quick Add
-            </button>
-          </div>
         </div>
-        
+
         {/* Product Info */}
         <div className="p-4 space-y-3">
+          {/* Stock Status Badge */}
+          {product.stockStatus && (
+            <div className="flex justify-center">
+              <span className="bg-green-100 text-green-700 text-xs font-medium px-3 py-1 rounded-full">
+                {product.stockStatus}
+              </span>
+            </div>
+          )}
+
           {/* Product Name */}
-          <h3 className="text-sm font-medium text-neutral-900 group-hover:text-brand-600 transition-colors duration-200 line-clamp-2 leading-tight">
+          <h3 className="text-sm font-medium text-gray-900 line-clamp-2 leading-tight min-h-[2.5rem]">
             {product.name}
           </h3>
-          
-          {/* Price */}
-          <div className="flex items-center space-x-2">
-            <span className="text-lg font-bold text-neutral-900">
-              {formattedPrice}
-            </span>
-            {isOnSale && (
-              <span className="text-sm text-neutral-500 line-through">
+
+          {/* Rating */}
+          {(product.rating || product.reviewCount) && (
+            <div className="flex items-center justify-center gap-1">
+              <div className="flex text-yellow-400 text-sm">
+                {'★'.repeat(product.rating || 4)}
+                {'☆'.repeat(5 - (product.rating || 4))}
+              </div>
+              <span className="text-xs text-gray-500">({product.reviewCount || 0} сэтгэгдэл)</span>
+            </div>
+          )}
+
+
+          {/* Original Price (crossed out) */}
+          {isOnSale && (
+            <div className="text-center">
+              <span className="text-sm text-gray-500 line-through">
                 {formattedOriginalPrice}
               </span>
-            )}
-          </div>
-          
-          {/* Reviews */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-1">
-              <div className="flex items-center">
-                {[...Array(5)].map((_, i) => (
-                  <svg
-                    key={i}
-                    className={`h-3.5 w-3.5 ${i < 4 ? 'text-warning-400' : 'text-neutral-300'}`}
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                ))}
-              </div>
-              <span className="text-xs text-neutral-500 font-medium">(4.0)</span>
             </div>
-            
-            {/* Stock Status */}
-            <div className="flex items-center space-x-1">
-              <div className="w-2 h-2 rounded-full bg-success-500"></div>
-              <span className="text-xs text-success-600 font-medium">In Stock</span>
-            </div>
+          )}
+
+          {/* Current Price */}
+          <div className="text-center">
+            <span className="text-xl font-bold text-gray-900">
+              {formattedPrice}
+            </span>
           </div>
-          
-          {/* Color Variants */}
-          <div className="flex items-center justify-between pt-2 border-t border-neutral-100">
-            <div className="flex space-x-1.5">
-              {[
-                { color: 'bg-neutral-800', name: 'Black' },
-                { color: 'bg-brand-600', name: 'Blue' },
-                { color: 'bg-error-600', name: 'Red' },
-                { color: 'bg-success-600', name: 'Green' }
-              ].slice(0, 3).map((variant, index) => (
-                <button 
-                  key={index}
-                  className={`w-5 h-5 rounded-full ${variant.color} border-2 border-white shadow-soft hover:scale-110 transition-transform duration-200`}
-                  title={variant.name}
-                />
-              ))}
-              {product.variants.length > 3 && (
-                <span className="text-xs text-neutral-500 font-medium ml-1">
-                  +{product.variants.length - 3} more
-                </span>
-              )}
-            </div>
-            
-            {/* More Options Indicator */}
-            <svg className="w-4 h-4 text-neutral-400 group-hover:text-brand-600 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-            </svg>
-          </div>
+
+          {/* Add to Cart Button */}
+          <button
+            className="w-full bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg font-medium transition-colors duration-200"
+            onClick={(e) => {
+              e.preventDefault()
+              // Add to cart logic here
+            }}
+          >
+            Сагсанд нэмэх
+          </button>
         </div>
       </Link>
     </div>
   )
 }
+
+// Keep the named export for backward compatibility
+export { ProductCard }

@@ -118,6 +118,17 @@ export interface ProductListOptions {
     name?: {
       contains?: string
     }
+    variants?: {
+      priceWithTax?: {
+        between?: {
+          start: number
+          end: number
+        }
+      }
+    }
+    facetValueIds?: {
+      in?: string[]
+    }
   }
 }
 
@@ -497,3 +508,89 @@ export interface EmailAddressConflictError {
 
 // Helper type for ID
 export type ID = string
+
+// Enhanced filtering types for advanced search
+export interface FacetValue {
+  id: string
+  name: string
+  code: string
+  facet: {
+    id: string
+    name: string
+    code: string
+  }
+}
+
+export interface FacetValueResult {
+  facetValue: FacetValue
+  count: number
+}
+
+export interface SearchInput {
+  term?: string
+  facetValueIds?: string[]
+  facetValueOperator?: 'AND' | 'OR'
+  collectionId?: string
+  collectionSlug?: string
+  groupByProduct?: boolean
+  take?: number
+  skip?: number
+  sort?: {
+    name?: 'ASC' | 'DESC'
+    price?: 'ASC' | 'DESC'
+    createdAt?: 'ASC' | 'DESC'
+  }
+}
+
+export interface SearchResult {
+  productId: string
+  productName: string
+  slug: string
+  description: string
+  sku: string
+  price: PriceRange | SinglePrice
+  priceWithTax: PriceRange | SinglePrice
+  productAsset?: Asset
+  collectionIds: string[]
+  facetIds: string[]
+  facetValueIds: string[]
+  score: number
+}
+
+export interface PriceRange {
+  min: number
+  max: number
+}
+
+export interface SinglePrice {
+  value: number
+}
+
+export interface SearchResponse {
+  items: SearchResult[]
+  totalItems: number
+  facetValues: FacetValueResult[]
+}
+
+export interface Facet {
+  id: string
+  name: string
+  code: string
+  values: FacetValue[]
+}
+
+export interface FilterOptions {
+  priceRange?: {
+    min: number
+    max: number
+  }
+  brands?: string[]
+  productTypes?: string[]
+  categories?: string[]
+}
+
+// Extended Product type with facets
+export interface ProductWithFacets extends Product {
+  facetValues?: FacetValue[]
+  collections?: Collection[]
+}

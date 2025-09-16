@@ -20,8 +20,10 @@ This is a modern ecommerce storefront built with Remix, designed to integrate se
 
 ## Environment Setup
 
-The project requires these environment variables:
+**Prerequisites:**
+- Node.js 20+ (required by package.json engines field)
 
+**Environment Variables:**
 - `VENDURE_SHOP_API_URL`: URL to the Vendure shop API (default: http://localhost:4000/shop-api)
 
 ## Development Commands
@@ -34,6 +36,7 @@ The project requires these environment variables:
 - `npm run test`: Run test suite with Vitest
 - `npm run test:watch`: Run tests in watch mode
 - `npm run test:coverage`: Run tests with coverage report
+- `npx vitest run path/to/test.test.tsx`: Run a single test file
 
 ## Project Structure
 
@@ -43,14 +46,27 @@ app/
 │   ├── Header.tsx      # Site header with navigation, mobile menu, search, cart badge
 │   ├── Footer.tsx      # Site footer with links and social proof
 │   ├── ProductCard.tsx # Product display card component with hover effects
-│   └── cart/           # Cart-specific components
-│       ├── FreeShipping.tsx
-│       ├── PaymentMethods.tsx
-│       └── TrustBadges.tsx
+│   ├── Breadcrumb.tsx  # Navigation breadcrumb component
+│   ├── PageHeader.tsx  # Reusable page header component
+│   ├── ScreenReaderAnnouncer.tsx # Accessibility announcements
+│   ├── SkeletonLoader.tsx # Loading state components
+│   ├── cart/           # Cart-specific components
+│   │   ├── FreeShipping.tsx
+│   │   ├── PaymentMethods.tsx
+│   │   └── TrustBadges.tsx
+│   └── filters/        # Product filtering components
+│       ├── CategorySidebar.tsx
+│       ├── PriceRangeSlider.tsx
+│       ├── BrandFilter.tsx
+│       └── ProductTypeFilter.tsx
 ├── lib/                # Core utilities and configuration
 │   ├── graphql.ts      # GraphQL client setup with cookie forwarding
 │   ├── queries.ts      # All GraphQL queries and mutations for Vendure API
-│   └── types.ts        # TypeScript type definitions matching Vendure schema
+│   ├── types.ts        # TypeScript type definitions matching Vendure schema
+│   ├── auth.ts         # Authentication utilities and validation functions
+│   ├── cache.ts        # In-memory cache with TTL for GraphQL responses
+│   ├── filtering.ts    # Filter state to GraphQL query conversion utilities
+│   └── performance.ts  # Performance hooks (debounce, throttle, lazy loading)
 ├── routes/             # Remix file-based routing
 │   ├── _index.tsx      # Homepage with hero section and featured products
 │   ├── products._index.tsx  # Product listing with search and pagination
@@ -67,7 +83,13 @@ app/
 │   ├── auth.logout.tsx # Logout handler
 │   ├── account._index.tsx # Account dashboard with recent orders
 │   ├── account.profile.tsx # Profile management
-│   └── account.security.tsx # Password and email change
+│   ├── account.security.tsx # Password and email change
+│   ├── account.addresses.tsx # Shipping/billing address management
+│   ├── account.orders.tsx # Order history with filtering and pagination
+│   ├── collections.$slug.tsx # Individual collection/category pages
+│   └── search.tsx      # Global search functionality
+├── hooks/              # Custom React hooks
+│   └── useFilters.ts   # Product filtering state management
 ├── utils/              # Utility functions
 │   └── utils.ts        # Price formatting and other helpers
 └── root.tsx            # Root layout with global header/footer and active order state
@@ -76,7 +98,7 @@ app/
 ## Key Features
 
 - **Homepage**: Shopify-inspired hero section with animated elements, featured products, and social proof
-- **Product Catalog**: Full product listing with search, pagination, and filtering
+- **Product Catalog**: Full product listing with advanced search, pagination, filtering (price, brand, category, type)
 - **Product Details**: Rich product pages with image galleries, variant selection, and add-to-cart
 - **Shopping Cart**: Complete cart management with free shipping banners and trust badges
 - **Multi-step Checkout**: Customer info → Shipping → Payment → Thank you with upsell products
@@ -208,8 +230,10 @@ tests/
 - **Server-Side Rendering**: Fast initial page loads with data pre-fetching
 - **Image Optimization**: Vendure asset pipeline with preset parameters
 - **Code Splitting**: Automatic route-based code splitting via Remix
-- **Caching**: Browser caching of GraphQL responses with session handling
+- **In-Memory Caching**: TTL-based cache for GraphQL responses (app/lib/cache.ts)
+- **Performance Hooks**: Debounce, throttle, and lazy loading utilities (app/lib/performance.ts)
 - **Optimistic Updates**: Immediate UI feedback for cart operations
+- **Advanced Filtering**: Efficient product filtering with URL state management
 
 ## Development Guidelines
 
@@ -420,3 +444,14 @@ account/
 - Secure error messages that don't leak account information
 - Automatic session timeout with clear user notification
 - Two-factor authentication support ready for future implementation
+
+## Important Development Guidelines
+
+### File Creation Policy
+- NEVER create files unless absolutely necessary for achieving your goal
+- ALWAYS prefer editing an existing file to creating a new one
+- NEVER proactively create documentation files (*.md) or README files unless explicitly requested
+
+### Task Execution
+- Do what has been asked; nothing more, nothing less
+- Focus on the specific requirements without adding unnecessary features

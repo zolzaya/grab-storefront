@@ -905,3 +905,407 @@ export const GET_AVAILABLE_COUNTRIES = `
     }
   }
 `
+
+// Enhanced filtering queries for category page
+export const GET_COLLECTION_PRODUCTS_WITH_FILTERS = `
+  query GetCollectionProductsWithFilters($collectionId: ID!, $options: ProductListOptions) {
+    collection(id: $collectionId) {
+      id
+      name
+      slug
+      productVariants(options: $options) {
+        items {
+          id
+          name
+          price
+          priceWithTax
+          sku
+          stockLevel
+          featuredAsset {
+            id
+            preview
+          }
+          product {
+            id
+            name
+            slug
+            description
+            featuredAsset {
+              id
+              preview
+            }
+            collections {
+              id
+              name
+              slug
+            }
+            facetValues {
+              id
+              name
+              code
+              facet {
+                id
+                name
+                code
+              }
+            }
+          }
+        }
+        totalItems
+        facetValues {
+          facetValue {
+            id
+            name
+            code
+            facet {
+              id
+              name
+              code
+            }
+          }
+          count
+        }
+      }
+    }
+  }
+`
+
+// Very basic products query for testing
+export const GET_PRODUCTS_BASIC = `
+  query GetProductsBasic {
+    products {
+      items {
+        id
+        name
+        slug
+        variants {
+          id
+          name
+          price
+          priceWithTax
+        }
+      }
+      totalItems
+    }
+  }
+`
+
+// Simple products query for testing
+export const GET_PRODUCTS_SIMPLE = `
+  query GetProductsSimple($options: ProductListOptions) {
+    products(options: $options) {
+      items {
+        id
+        name
+        slug
+        description
+        featuredAsset {
+          id
+          preview
+        }
+        variants {
+          id
+          name
+          price
+          priceWithTax
+        }
+      }
+      totalItems
+    }
+  }
+`
+
+export const GET_PRODUCTS_WITH_FILTERS = `
+  query GetProductsWithFilters($options: ProductListOptions) {
+    products(options: $options) {
+      items {
+        id
+        name
+        slug
+        description
+        featuredAsset {
+          id
+          preview
+        }
+        variants {
+          id
+          name
+          price
+          priceWithTax
+          sku
+          stockLevel
+          featuredAsset {
+            id
+            preview
+          }
+        }
+      }
+      totalItems
+    }
+  }
+`
+
+export const GET_COLLECTION_WITH_PRODUCTS = `
+  query GetCollectionWithProducts($slug: String!, $options: ProductListOptions) {
+    collection(slug: $slug) {
+      id
+      name
+      slug
+      description
+      featuredAsset {
+        id
+        preview
+        source
+      }
+      breadcrumbs {
+        id
+        name
+        slug
+      }
+      children {
+        id
+        name
+        slug
+        featuredAsset {
+          id
+          preview
+        }
+        productVariants {
+          totalItems
+        }
+      }
+      productVariants(options: $options) {
+        items {
+          id
+          name
+          price
+          priceWithTax
+          sku
+          stockLevel
+          featuredAsset {
+            id
+            preview
+          }
+          product {
+            id
+            name
+            slug
+            description
+            featuredAsset {
+              id
+              preview
+            }
+            collections {
+              id
+              name
+              slug
+            }
+            facetValues {
+              id
+              name
+              code
+              facet {
+                id
+                name
+                code
+              }
+            }
+            customFields
+          }
+        }
+        totalItems
+        facetValues {
+          facetValue {
+            id
+            name
+            code
+            facet {
+              id
+              name
+              code
+            }
+          }
+          count
+        }
+      }
+    }
+  }
+`
+
+export const GET_SEARCH_RESULTS = `
+  query GetSearchResults(
+    $term: String,
+    $facetValueIds: [ID!],
+    $facetValueOperator: LogicalOperator,
+    $collectionId: ID,
+    $collectionSlug: String,
+    $groupByProduct: Boolean,
+    $take: Int,
+    $skip: Int,
+    $sort: SearchResultSortParameter
+  ) {
+    search(input: {
+      term: $term,
+      facetValueIds: $facetValueIds,
+      facetValueOperator: $facetValueOperator,
+      collectionId: $collectionId,
+      collectionSlug: $collectionSlug,
+      groupByProduct: $groupByProduct,
+      take: $take,
+      skip: $skip,
+      sort: $sort
+    }) {
+      items {
+        productId
+        productName
+        slug
+        description
+        sku
+        price {
+          ... on PriceRange {
+            min
+            max
+          }
+          ... on SinglePrice {
+            value
+          }
+        }
+        priceWithTax {
+          ... on PriceRange {
+            min
+            max
+          }
+          ... on SinglePrice {
+            value
+          }
+        }
+        productAsset {
+          id
+          preview
+        }
+        collectionIds
+        facetIds
+        facetValueIds
+        score
+      }
+      totalItems
+      facetValues {
+        facetValue {
+          id
+          name
+          code
+          facet {
+            id
+            name
+            code
+          }
+        }
+        count
+      }
+    }
+  }
+`
+
+export const GET_FACETS = `
+  query GetFacets($options: FacetListOptions) {
+    facets(options: $options) {
+      items {
+        id
+        name
+        code
+        values {
+          id
+          name
+          code
+        }
+      }
+      totalItems
+    }
+  }
+`
+
+export const GET_COLLECTIONS_TREE = `
+  query GetCollectionsTree {
+    collections {
+      items {
+        id
+        name
+        slug
+        description
+        featuredAsset {
+          id
+          preview
+        }
+        parent {
+          id
+          name
+          slug
+        }
+        children {
+          id
+          name
+          slug
+          featuredAsset {
+            id
+            preview
+          }
+          children {
+            id
+            name
+            slug
+            featuredAsset {
+              id
+              preview
+            }
+            productVariants {
+              totalItems
+            }
+          }
+          productVariants {
+            totalItems
+          }
+        }
+        productVariants {
+          totalItems
+        }
+      }
+    }
+  }
+`
+
+export const GET_PRICE_RANGE = `
+  query GetPriceRange($collectionSlug: String) {
+    searchMin: search(input: {
+      collectionSlug: $collectionSlug,
+      take: 1,
+      sort: { price: ASC }
+    }) {
+      items {
+        price {
+          ... on PriceRange {
+            min
+          }
+          ... on SinglePrice {
+            value
+          }
+        }
+      }
+    }
+    searchMax: search(input: {
+      collectionSlug: $collectionSlug,
+      take: 1,
+      sort: { price: DESC }
+    }) {
+      items {
+        price {
+          ... on PriceRange {
+            max
+          }
+          ... on SinglePrice {
+            value
+          }
+        }
+      }
+    }
+  }
+`
