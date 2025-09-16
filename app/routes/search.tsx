@@ -6,7 +6,6 @@ import Breadcrumb from '~/components/Breadcrumb'
 import PageHeader from '~/components/PageHeader'
 import PriceRangeSlider from '~/components/filters/PriceRangeSlider'
 import CategorySidebar from '~/components/filters/CategorySidebar'
-import BrandFilter from '~/components/filters/BrandFilter'
 import ProductTypeFilter from '~/components/filters/ProductTypeFilter'
 import FacetFilter from '~/components/filters/FacetFilter'
 import ProductCard from '~/components/ProductCard'
@@ -15,7 +14,6 @@ import {
   FilterSkeleton,
   PriceSliderSkeleton,
   CategorySidebarSkeleton,
-  BrandFilterSkeleton,
   PaginationSkeleton,
   PageHeaderSkeleton
 } from '~/components/SkeletonLoader'
@@ -28,8 +26,6 @@ import {
   GET_FACETS
 } from '~/lib/queries'
 import {
-  mapFacetValuesToBrands,
-  mapFacetValuesToProductTypes,
   mapFacetValuesByCode,
   getAvailableFacetTypes,
   buildCategoryTree,
@@ -37,7 +33,6 @@ import {
 } from '~/lib/filtering'
 import type { ViewMode, SortOption } from '~/components/PageHeader'
 import type { CategoryNode } from '~/components/filters/CategorySidebar'
-import type { Brand } from '~/components/filters/BrandFilter'
 import type { ProductTypeOption } from '~/components/filters/ProductTypeFilter'
 
 export const meta: MetaFunction = () => {
@@ -218,10 +213,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
     // Extract all available facet types and their options
     const availableFacetTypes = getAvailableFacetTypes(facetValues)
-    const brands = mapFacetValuesToBrands(facetValues)
-    const productTypeOptions = mapFacetValuesToProductTypes(facetValues)
 
-    // Map other facet types (excluding 'category' since we already have collection-based categories)
+    // Map all facet types using generic function (excluding 'category' since we have collection-based categories)
+    const brandOptions = mapFacetValuesByCode(facetValues, 'brand')
+    const productTypeOptions = mapFacetValuesByCode(facetValues, 'product-type')
     const colorOptions = mapFacetValuesByCode(facetValues, 'color')
     const plantTypeOptions = mapFacetValuesByCode(facetValues, 'plant-type')
 
@@ -240,7 +235,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
     // Log available facets for debugging
     console.log('Mapped facet options:', {
-      brands: brands.length,
+      brands: brandOptions.length,
       productTypes: productTypeOptions.length,
       colors: colorOptions.length,
       plantTypes: plantTypeOptions.length,
@@ -312,7 +307,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       serverTotalProducts: totalProducts, // Server-side total for pagination
       breadcrumbs,
       priceRange: priceRange,
-      brands,
+      brandOptions,
       categoryTree,
       productTypeOptions,
       colorOptions,
@@ -337,7 +332,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       totalProducts: 0,
       breadcrumbs: [{ id: '1', name: 'Бүх бараа', slug: 'all-products' }],
       priceRange: { min: 0, max: 1000000 },
-      brands: [],
+      brandOptions: [],
       categoryTree: [],
       productTypeOptions: [],
       currentFilters: filters,
@@ -356,7 +351,7 @@ export default function SearchPage() {
   const loaderData = useLoaderData<typeof loader>()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const { filters, updatePriceRange, updateSort, toggleBrand, toggleProductType, toggleFacetValue, updateCollection } = useFilters()
+  const { filters, updatePriceRange, updateSort, toggleProductType, toggleFacetValue, updateCollection } = useFilters()
 
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false)
@@ -406,7 +401,7 @@ export default function SearchPage() {
     totalProducts,
     serverTotalProducts,
     priceRange,
-    brands,
+    brandOptions,
     categoryTree,
     productTypeOptions,
     colorOptions,
@@ -461,9 +456,9 @@ export default function SearchPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707v4.586a1 1 0 01-.293.707l-2 2A1 1 0 0111 21.586V15.414a1 1 0 00-.293-.707L4.293 8.293A1 1 0 014 7.586V4z" />
             </svg>
             Шүүлтүүр
-            {(filters.brands?.length || 0) + (filters.productTypes?.length || 0) + (filters.priceMin ? 1 : 0) + (filters.priceMax ? 1 : 0) > 0 && (
+            {(filters.facetValueIds?.length || 0) + (filters.priceMin ? 1 : 0) + (filters.priceMax ? 1 : 0) > 0 && (
               <span className="ml-2 bg-red-600 text-white text-xs rounded-full px-2 py-1">
-                {(filters.brands?.length || 0) + (filters.productTypes?.length || 0) + (filters.priceMin ? 1 : 0) + (filters.priceMax ? 1 : 0)}
+                {(filters.facetValueIds?.length || 0) + (filters.priceMin ? 1 : 0) + (filters.priceMax ? 1 : 0)}
               </span>
             )}
           </button>
@@ -477,7 +472,7 @@ export default function SearchPage() {
                 <>
                   <CategorySidebarSkeleton />
                   <PriceSliderSkeleton />
-                  <BrandFilterSkeleton />
+                  <FilterSkeleton />
                   <FilterSkeleton />
                 </>
               ) : (
@@ -506,18 +501,18 @@ export default function SearchPage() {
                   </div>
 
                   {/* Brand Filter */}
-                  {brands.length > 0 && (
+                  {brandOptions.length > 0 && (
                     <div>
-                      <BrandFilter
-                        brands={brands}
-                        selectedBrands={filters.brands || []}
-                        onBrandToggle={(brandId) => {
+                      <FacetFilter
+                        title={facetDisplayNames['brand'] || 'Brand'} // Use backend facet name
+                        facetCode="brand"
+                        options={brandOptions}
+                        selectedOptions={filters.facetValueIds || []} // Use generic facet value IDs
+                        onOptionToggle={(facetValueId) => {
                           setIsProductsLoading(true)
-                          toggleBrand(brandId)
+                          toggleFacetValue(facetValueId)
                           setTimeout(() => setIsProductsLoading(false), 600)
                         }}
-                        showProductCount={true}
-                        title={facetDisplayNames['brand'] || 'Brand'} // Use backend facet name
                       />
                     </div>
                   )}
@@ -775,11 +770,14 @@ export default function SearchPage() {
 
                 {/* Brand Filter */}
                 <div>
-                  <BrandFilter
-                    brands={brands}
-                    selectedBrands={filters.brands || []}
-                    onBrandToggle={toggleBrand}
-                    showProductCount={true}
+                  <FacetFilter
+                    title={facetDisplayNames['brand'] || 'Brand'} // Use backend facet name
+                    facetCode="brand"
+                    options={brandOptions}
+                    selectedOptions={filters.facetValueIds || []} // Use generic facet value IDs
+                    onOptionToggle={(facetValueId) => {
+                      toggleFacetValue(facetValueId)
+                    }}
                   />
                 </div>
 
