@@ -28,13 +28,31 @@ export default function BrandFilter({
   const [searchTerm, setSearchTerm] = useState('')
   const [showAll, setShowAll] = useState(false)
 
-  // Filter brands based on search term
+  // Filter and sort brands: selected first, then by search term
   const filteredBrands = useMemo(() => {
-    if (!searchTerm) return brands
-    return brands.filter(brand =>
-      brand.name.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  }, [brands, searchTerm])
+    let filtered = brands
+
+    // Apply search filter if there's a search term
+    if (searchTerm) {
+      filtered = brands.filter(brand =>
+        brand.name.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    }
+
+    // Sort: selected brands first, then alphabetically
+    return filtered.sort((a, b) => {
+      const aSelected = selectedBrands.includes(a.id)
+      const bSelected = selectedBrands.includes(b.id)
+
+      // If selection status is different, selected comes first
+      if (aSelected !== bSelected) {
+        return bSelected ? 1 : -1
+      }
+
+      // If both have same selection status, sort alphabetically
+      return a.name.localeCompare(b.name)
+    })
+  }, [brands, searchTerm, selectedBrands])
 
   // Show first 10 brands by default, or all if showAll is true
   const visibleBrands = showAll ? filteredBrands : filteredBrands.slice(0, 10)

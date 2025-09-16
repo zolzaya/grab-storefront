@@ -26,13 +26,31 @@ export default function ProductTypeFilter({
   const [searchTerm, setSearchTerm] = useState('')
   const [showAll, setShowAll] = useState(false)
 
-  // Filter options based on search term
+  // Filter and sort options: selected first, then by search term
   const filteredOptions = useMemo(() => {
-    if (!searchTerm) return options
-    return options.filter(option =>
-      option.name.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  }, [options, searchTerm])
+    let filtered = options
+
+    // Apply search filter if there's a search term
+    if (searchTerm) {
+      filtered = options.filter(option =>
+        option.name.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    }
+
+    // Sort: selected options first, then alphabetically
+    return filtered.sort((a, b) => {
+      const aSelected = selectedTypes.includes(a.id)
+      const bSelected = selectedTypes.includes(b.id)
+
+      // If selection status is different, selected comes first
+      if (aSelected !== bSelected) {
+        return bSelected ? 1 : -1
+      }
+
+      // If both have same selection status, sort alphabetically
+      return a.name.localeCompare(b.name)
+    })
+  }, [options, searchTerm, selectedTypes])
 
   // Show first 10 options by default, or all if showAll is true
   const visibleOptions = showAll ? filteredOptions : filteredOptions.slice(0, 10)
