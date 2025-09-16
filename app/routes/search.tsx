@@ -161,6 +161,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       })
     }
 
+    // Debug: Log all available facets
+    console.log('Available facets debug:', {
+      facetValuesCount: facetValues.length,
+      uniqueFacetCodes: [...new Set(facetValues.map((fv: any) => fv.facetValue.facet.code))],
+      sampleFacets: facetValues.slice(0, 5).map((fv: any) => ({
+        facetCode: fv.facetValue.facet.code,
+        facetName: fv.facetValue.facet.name,
+        valueName: fv.facetValue.name,
+        count: fv.count
+      }))
+    })
+
     // Extract brands and product types from facets
     const brands = mapFacetValuesToBrands(facetValues)
     const productTypeOptions = mapFacetValuesToProductTypes(facetValues)
