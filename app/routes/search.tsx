@@ -1,5 +1,4 @@
 import type { LoaderFunctionArgs, MetaFunction } from '@remix-run/node'
-import { json } from '@remix-run/node'
 import { useLoaderData, useSearchParams, useNavigate } from '@remix-run/react'
 import { useState } from 'react'
 
@@ -157,7 +156,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       reviewCount: Math.floor(Math.random() * 50) + 10,
     }))
 
-    return json({
+    return {
       products: enhancedProducts,
       totalProducts,
       breadcrumbs,
@@ -172,13 +171,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         hasNextPage: skip + take < totalProducts,
         hasPreviousPage: page > 1,
       }
-    })
+    }
 
   } catch (error) {
     console.error('Search loader error:', error)
 
     // Fallback to basic data structure on error
-    return json({
+    return {
       products: [],
       totalProducts: 0,
       breadcrumbs: [{ id: '1', name: 'Бүх бараа', slug: 'all-products' }],
@@ -194,7 +193,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         hasPreviousPage: false,
       },
       error: 'Failed to load search results'
-    })
+    }
   }
 }
 
@@ -421,86 +420,85 @@ export default function SearchPage() {
                     )}
                   </div>
 
-                {/* Pagination Controls */}
-                <div className="flex items-center space-x-2">
-                  {/* Previous Button */}
-                  {pagination.hasPreviousPage ? (
-                    <a
-                      href={buildUrlWithParams({
-                        page: (pagination.currentPage - 1).toString()
-                      })}
-                      className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-                    >
-                      Өмнөх
-                    </a>
-                  ) : (
-                    <span className="px-3 py-2 text-sm font-medium text-gray-400 bg-gray-100 border border-gray-300 rounded-md cursor-not-allowed">
-                      Өмнөх
-                    </span>
-                  )}
-
-                  {/* Page Numbers */}
-                  {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                    let pageNum: number
-                    if (pagination.totalPages <= 5) {
-                      pageNum = i + 1
-                    } else if (pagination.currentPage <= 3) {
-                      pageNum = i + 1
-                    } else if (pagination.currentPage >= pagination.totalPages - 2) {
-                      pageNum = pagination.totalPages - 4 + i
-                    } else {
-                      pageNum = pagination.currentPage - 2 + i
-                    }
-
-                    return (
-                      <a
-                        key={pageNum}
-                        href={buildUrlWithParams({
-                          page: pageNum.toString()
-                        })}
-                        className={`px-3 py-2 text-sm font-medium rounded-md ${
-                          pageNum === pagination.currentPage
-                            ? 'text-white bg-red-600 border-red-600'
-                            : 'text-gray-700 bg-white border-gray-300 hover:bg-gray-50'
-                        } border`}
-                      >
-                        {pageNum}
-                      </a>
-                    )
-                  })}
-
-                  {/* Show ellipsis and last page if needed */}
-                  {pagination.totalPages > 5 && pagination.currentPage < pagination.totalPages - 2 && (
-                    <>
-                      <span className="px-3 py-2 text-sm font-medium text-gray-500">...</span>
+                  {/* Pagination Controls */}
+                  <div className="flex items-center space-x-2">
+                    {/* Previous Button */}
+                    {pagination.hasPreviousPage ? (
                       <a
                         href={buildUrlWithParams({
-                          page: pagination.totalPages.toString()
+                          page: (pagination.currentPage - 1).toString()
                         })}
                         className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
                       >
-                        {pagination.totalPages}
+                        Өмнөх
                       </a>
-                    </>
-                  )}
+                    ) : (
+                      <span className="px-3 py-2 text-sm font-medium text-gray-400 bg-gray-100 border border-gray-300 rounded-md cursor-not-allowed">
+                        Өмнөх
+                      </span>
+                    )}
 
-                  {/* Next Button */}
-                  {pagination.hasNextPage ? (
-                    <a
-                      href={buildUrlWithParams({
-                        page: (pagination.currentPage + 1).toString()
-                      })}
-                      className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-                    >
-                      Дараах
-                    </a>
-                  ) : (
-                    <span className="px-3 py-2 text-sm font-medium text-gray-400 bg-gray-100 border border-gray-300 rounded-md cursor-not-allowed">
-                      Дараах
-                    </span>
-                  )}
+                    {/* Page Numbers */}
+                    {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                      let pageNum: number
+                      if (pagination.totalPages <= 5) {
+                        pageNum = i + 1
+                      } else if (pagination.currentPage <= 3) {
+                        pageNum = i + 1
+                      } else if (pagination.currentPage >= pagination.totalPages - 2) {
+                        pageNum = pagination.totalPages - 4 + i
+                      } else {
+                        pageNum = pagination.currentPage - 2 + i
+                      }
+
+                      return (
+                        <a
+                          key={pageNum}
+                          href={buildUrlWithParams({
+                            page: pageNum.toString()
+                          })}
+                          className={`px-3 py-2 text-sm font-medium rounded-md ${pageNum === pagination.currentPage
+                            ? 'text-white bg-red-600 border-red-600'
+                            : 'text-gray-700 bg-white border-gray-300 hover:bg-gray-50'
+                            } border`}
+                        >
+                          {pageNum}
+                        </a>
+                      )
+                    })}
+
+                    {/* Show ellipsis and last page if needed */}
+                    {pagination.totalPages > 5 && pagination.currentPage < pagination.totalPages - 2 && (
+                      <>
+                        <span className="px-3 py-2 text-sm font-medium text-gray-500">...</span>
+                        <a
+                          href={buildUrlWithParams({
+                            page: pagination.totalPages.toString()
+                          })}
+                          className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                        >
+                          {pagination.totalPages}
+                        </a>
+                      </>
+                    )}
+
+                    {/* Next Button */}
+                    {pagination.hasNextPage ? (
+                      <a
+                        href={buildUrlWithParams({
+                          page: (pagination.currentPage + 1).toString()
+                        })}
+                        className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                      >
+                        Дараах
+                      </a>
+                    ) : (
+                      <span className="px-3 py-2 text-sm font-medium text-gray-400 bg-gray-100 border border-gray-300 rounded-md cursor-not-allowed">
+                        Дараах
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
               )
             )}
 
