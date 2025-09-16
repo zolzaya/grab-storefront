@@ -70,8 +70,20 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     // Get search term from URL
     const searchTerm = searchParams.get('q') || ''
 
-    // Build search parameters
-    const searchOptions = {
+    /*
+     * DUAL QUERY SYSTEM for better filter UX:
+     *
+     * 1. PRODUCT QUERY: Applies ALL user filters to get the actual filtered products
+     *    - Used for: displaying products, pagination count, total results
+     *
+     * 2. FILTER OPTIONS QUERY: Applies minimal filters (only collection) to get all available filter options
+     *    - Used for: facet values, brands, product types, price ranges
+     *    - This ensures filter options remain visible even when other filters are applied
+     *    - Prevents the "disappearing facets" UX issue common in e-commerce
+     */
+
+    // Build search parameters for filtered products
+    const productSearchOptions = {
       term: searchTerm,
       take,
       skip,
@@ -84,26 +96,30 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       })
     }
 
-    // Fetch search results
-    const searchResult = await shopApiRequest<{ search: any }>(GET_SEARCH_RESULTS, searchOptions, request).catch(() => ({
-      search: { items: [], totalItems: 0 }
-    }))
-
-    // Get products for price range calculation
-    // If collection filter is applied, get prices for that collection only
-    // Otherwise get all products for global price range
-    const priceRangeSearchOptions = {
-      take: 1000, // Get more products for better price range
+    // Build search parameters for filter options (no user filters except collection)
+    const filterOptionsSearchOptions = {
+      term: searchTerm,
+      take: 1000, // Get more results to ensure we get all filter options
       skip: 0,
       sort: { name: 'ASC' as const },
       groupByProduct: true,
-      // Include collection filter if present, but no other filters
+      // Only apply collection filter, no other user filters
       ...(filters.collectionId && { collectionId: filters.collectionId })
     }
 
-    const priceRangeResult = await shopApiRequest<{ search: any }>(GET_SEARCH_RESULTS, priceRangeSearchOptions, request).catch(() => ({
-      search: { items: [], totalItems: 0 }
-    }))
+    // Fetch both filtered products and unfiltered data for filter options
+    const [productSearchResult, filterOptionsResult] = await Promise.all([
+      // Filtered products search
+      shopApiRequest<{ search: any }>(GET_SEARCH_RESULTS, productSearchOptions, request).catch(() => ({
+        search: { items: [], totalItems: 0 }
+      })),
+      // Unfiltered search for filter options
+      shopApiRequest<{ search: any }>(GET_SEARCH_RESULTS, filterOptionsSearchOptions, request).catch(() => ({
+        search: { items: [], totalItems: 0 }
+      }))
+    ])
+
+    // Note: We'll use filterOptionsResult for price range calculation
 
     // Parallel data fetching for other data
     const [collectionsResult, facetsResult] = await Promise.all([
@@ -119,9 +135,28 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     ])
 
     // Process the search results and convert to product format
-    const searchItems = searchResult.search?.items || []
-    const totalProducts = searchResult.search?.totalItems || 0
-    const facetValues = searchResult.search?.facetValues || []
+    const searchItems = productSearchResult.search?.items || []
+    const totalProducts = productSearchResult.search?.totalItems || 0
+
+    // Use filter options result for facet values (unfiltered to show all available options)
+    const facetValues = filterOptionsResult.search?.facetValues || []
+
+    // Debug logging for dual query system
+    console.log('Dual query system debug:', {
+      searchTerm,
+      appliedFilters: filters,
+      productResults: {
+        totalProducts: productSearchResult.search?.totalItems || 0,
+        returnedProducts: productSearchResult.search?.items?.length || 0,
+        facetValuesInFiltered: productSearchResult.search?.facetValues?.length || 0
+      },
+      filterOptions: {
+        totalFilterProducts: filterOptionsResult.search?.totalItems || 0,
+        returnedFilterProducts: filterOptionsResult.search?.items?.length || 0,
+        facetValuesInUnfiltered: filterOptionsResult.search?.facetValues?.length || 0,
+        uniqueFacetCodes: [...new Set(facetValues.map((fv: any) => fv.facetValue.facet.code))]
+      }
+    })
 
 
     // Convert search results to product format for ProductCard compatibility
@@ -216,8 +251,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     // Build category tree from collections
     const categoryTree = buildCategoryTree(collectionsResult.collections?.items || [])
 
-    // Calculate price range from collection products (or all products if no collection filter)
-    const productsForRange = (priceRangeResult.search?.items || []).map((item: any) => {
+    // Calculate price range from unfiltered products (or collection-filtered if collection is selected)
+    const productsForRange = (filterOptionsResult.search?.items || []).map((item: any) => {
       const priceValue = item.priceWithTax?.value || item.priceWithTax?.min || item.price?.value || item.price?.min
       return {
         priceWithTax: { value: priceValue || 0 }
@@ -267,7 +302,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     // Debug facet filtering
     console.log('Facet filtering debug:', {
       facetValueIds: filters.facetValueIds,
-      searchOptionsUsed: searchOptions
+      productSearchOptionsUsed: productSearchOptions,
+      filterOptionsSearchOptionsUsed: filterOptionsSearchOptions
     })
 
     return {
