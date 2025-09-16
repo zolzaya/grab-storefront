@@ -27,7 +27,6 @@ import {
   GET_FACETS
 } from '~/lib/queries'
 import {
-  buildProductListOptions,
   mapFacetValuesToBrands,
   mapFacetValuesToProductTypes,
   buildCategoryTree,
