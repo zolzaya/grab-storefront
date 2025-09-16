@@ -222,7 +222,7 @@ export function extractPriceRange(searchResults: any[]): { min: number; max: num
  * Build category tree with product counts from collections
  */
 export function buildCategoryTree(collections: any[]): any[] {
-  const rootCollections = collections.filter(c => !c.parent)
+  const rootCollections = collections.filter(c => !c.parent || c.parent?.name === '__root_collection__')
 
   return rootCollections.map(collection => ({
     id: collection.id,

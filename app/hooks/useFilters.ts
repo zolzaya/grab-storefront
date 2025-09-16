@@ -7,6 +7,7 @@ export interface FilterState {
   brands?: string[]
   productTypes?: string[]
   sort?: string
+  collectionId?: string
 }
 
 export function useFilters() {
@@ -20,6 +21,7 @@ export function useFilters() {
       brands: searchParams.get('brands')?.split(',').filter(Boolean) || [],
       productTypes: searchParams.get('productTypes')?.split(',').filter(Boolean) || [],
       sort: searchParams.get('sort') || undefined,
+      collectionId: searchParams.get('collectionId') || undefined,
     }
   }, [searchParams])
 
@@ -69,6 +71,15 @@ export function useFilters() {
           updated.set('sort', newFilters.sort)
         } else {
           updated.delete('sort')
+        }
+      }
+
+      // Handle collection
+      if (newFilters.collectionId !== undefined) {
+        if (newFilters.collectionId) {
+          updated.set('collectionId', newFilters.collectionId)
+        } else {
+          updated.delete('collectionId')
         }
       }
 
@@ -122,6 +133,16 @@ export function useFilters() {
     updateProductTypes(newTypes)
   }, [filters.productTypes, updateProductTypes])
 
+  // Update collection selection
+  const updateCollection = useCallback((collectionId: string | undefined) => {
+    updateFilters({ collectionId })
+  }, [updateFilters])
+
+  // Select collection (clear other filters when selecting collection)
+  const selectCollection = useCallback((collectionId: string) => {
+    updateFilters({ collectionId })
+  }, [updateFilters])
+
   return {
     filters,
     updateFilters,
@@ -131,6 +152,8 @@ export function useFilters() {
     updateSort,
     toggleBrand,
     toggleProductType,
+    updateCollection,
+    selectCollection,
     clearFilters,
   }
 }

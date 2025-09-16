@@ -55,6 +55,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     brands: searchParams.get('brands')?.split(',').filter(Boolean) || [],
     productTypes: searchParams.get('productTypes')?.split(',').filter(Boolean) || [],
     sort: searchParams.get('sort') || 'newest',
+    collectionId: searchParams.get('collectionId') || undefined,
   }
 
   const page = parseInt(searchParams.get('page') || '1')
@@ -71,11 +72,28 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       take,
       skip,
       sort: { name: 'ASC' as const },
-      groupByProduct: true
+      groupByProduct: true,
+      ...(filters.collectionId && { collectionId: filters.collectionId })
     }
 
     // Fetch search results
     const searchResult = await shopApiRequest<{ search: any }>(GET_SEARCH_RESULTS, searchOptions, request).catch(() => ({
+      search: { items: [], totalItems: 0 }
+    }))
+
+    // Get products for price range calculation
+    // If collection filter is applied, get prices for that collection only
+    // Otherwise get all products for global price range
+    const priceRangeSearchOptions = {
+      take: 1000, // Get more products for better price range
+      skip: 0,
+      sort: { name: 'ASC' as const },
+      groupByProduct: true,
+      // Include collection filter if present, but no other filters
+      ...(filters.collectionId && { collectionId: filters.collectionId })
+    }
+
+    const priceRangeResult = await shopApiRequest<{ search: any }>(GET_SEARCH_RESULTS, priceRangeSearchOptions, request).catch(() => ({
       search: { items: [], totalItems: 0 }
     }))
 
@@ -99,13 +117,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 
     // Convert search results to product format for ProductCard compatibility
-    const products = searchItems.map((item: any) => {
+    let products = searchItems.map((item: any) => {
       // Handle image asset - check for productAsset or create placeholder
       const imageAsset = item.productAsset ? {
         id: item.productAsset.id,
         preview: item.productAsset.preview
       } : null
 
+      const price = item.price?.value || item.price?.min || 0
+      const priceWithTax = item.priceWithTax?.value || item.priceWithTax?.min || 0
 
       return {
         id: item.productId,
@@ -116,14 +136,30 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         variants: [{
           id: item.productId + '-variant',
           name: item.productName,
-          price: item.price?.value || item.price?.min || 0,
-          priceWithTax: item.priceWithTax?.value || item.priceWithTax?.min || 0,
+          price: price,
+          priceWithTax: priceWithTax,
           sku: item.sku,
           stockLevel: 'IN_STOCK',
           featuredAsset: imageAsset
         }]
       }
     })
+
+    // Apply client-side price filtering
+    if (filters.priceMin || filters.priceMax) {
+      products = products.filter((product: any) => {
+        const productPrice = product.variants?.[0]?.priceWithTax || 0
+
+        if (filters.priceMin && productPrice < filters.priceMin) {
+          return false
+        }
+        if (filters.priceMax && productPrice > filters.priceMax) {
+          return false
+        }
+
+        return true
+      })
+    }
 
     // Extract brands and product types from facets
     const brands = mapFacetValuesToBrands(facetValues)
@@ -132,15 +168,31 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     // Build category tree from collections
     const categoryTree = buildCategoryTree(collectionsResult.collections?.items || [])
 
-    // Calculate price range from current products
-    const priceRange = extractPriceRange(products.map((p: any) => ({
-      priceWithTax: { value: p.variants?.[0]?.priceWithTax || 0 }
-    })))
+    // Calculate price range from collection products (or all products if no collection filter)
+    const productsForRange = (priceRangeResult.search?.items || []).map((item: any) => {
+      const priceValue = item.priceWithTax?.value || item.priceWithTax?.min || item.price?.value || item.price?.min
+      return {
+        priceWithTax: { value: priceValue || 0 }
+      }
+    }).filter(p => p.priceWithTax.value > 0) // Only include products with valid prices
 
-    // Build breadcrumbs
-    const breadcrumbs = [
-      { id: '1', name: 'Нүүр', slug: '/' },
-    ]
+    const priceRange = extractPriceRange(productsForRange)
+
+    // Debug logging for collection-specific price ranges
+    if (filters.collectionId) {
+      console.log('Collection price range debug:', {
+        collectionId: filters.collectionId,
+        productCount: productsForRange.length,
+        samplePrices: productsForRange.slice(0, 5).map(p => p.priceWithTax.value),
+        calculatedRange: priceRange
+      })
+    }
+
+    // Update total products count after client-side filtering
+    const filteredTotalProducts = products.length
+
+    // Build breadcrumbs (empty array since Breadcrumb component handles Home link automatically)
+    const breadcrumbs: any[] = []
 
     // Enhance products with additional data for display
     const enhancedProducts = products.map((product: any) => ({
@@ -157,17 +209,17 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
     return {
       products: enhancedProducts,
-      totalProducts,
+      totalProducts: filteredTotalProducts,
       breadcrumbs,
-      priceRange: priceRange.min > 0 ? priceRange : { min: 2700, max: 28000000 },
+      priceRange: priceRange,
       brands,
       categoryTree,
       productTypeOptions,
       currentFilters: filters,
       pagination: {
         currentPage: page,
-        totalPages: Math.ceil(totalProducts / take),
-        hasNextPage: skip + take < totalProducts,
+        totalPages: Math.ceil(filteredTotalProducts / take),
+        hasNextPage: skip + take < filteredTotalProducts,
         hasPreviousPage: page > 1,
       }
     }
@@ -200,11 +252,12 @@ export default function SearchPage() {
   const loaderData = useLoaderData<typeof loader>()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const { filters, updatePriceRange, updateSort, toggleBrand, toggleProductType } = useFilters()
+  const { filters, updatePriceRange, updateSort, toggleBrand, toggleProductType, updateCollection } = useFilters()
 
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false)
   const [isFilteringLoading, setIsFilteringLoading] = useState(false)
+  const [isProductsLoading, setIsProductsLoading] = useState(false)
 
   // Helper function to build URLs with current search params
   const buildUrlWithParams = (newParams: Record<string, string>) => {
@@ -324,7 +377,7 @@ export default function SearchPage() {
                   <div>
                     <CategorySidebar
                       categories={categoryTree}
-                      currentCategoryId="" // No specific collection selected
+                      currentCategoryId={filters.collectionId || ""}
                     />
                   </div>
 
@@ -335,9 +388,9 @@ export default function SearchPage() {
                       max={priceRange.max}
                       value={currentPriceRange}
                       onChange={(value) => {
-                        setIsFilteringLoading(true)
+                        setIsProductsLoading(true)
                         updatePriceRange(value[0], value[1], priceRange.min, priceRange.max)
-                        setTimeout(() => setIsFilteringLoading(false), 800)
+                        setTimeout(() => setIsProductsLoading(false), 800)
                       }}
                       step={1000}
                     />
@@ -349,9 +402,9 @@ export default function SearchPage() {
                       brands={brands}
                       selectedBrands={filters.brands || []}
                       onBrandToggle={(brandId) => {
-                        setIsFilteringLoading(true)
+                        setIsProductsLoading(true)
                         toggleBrand(brandId)
-                        setTimeout(() => setIsFilteringLoading(false), 600)
+                        setTimeout(() => setIsProductsLoading(false), 600)
                       }}
                       showProductCount={true}
                     />
@@ -363,9 +416,9 @@ export default function SearchPage() {
                       options={productTypeOptions}
                       selectedTypes={filters.productTypes || []}
                       onTypeToggle={(typeId) => {
-                        setIsFilteringLoading(true)
+                        setIsProductsLoading(true)
                         toggleProductType(typeId)
-                        setTimeout(() => setIsFilteringLoading(false), 600)
+                        setTimeout(() => setIsProductsLoading(false), 600)
                       }}
                     />
                   </div>
@@ -376,7 +429,7 @@ export default function SearchPage() {
 
           {/* Products Grid */}
           <div className="lg:col-span-3">
-            {isFilteringLoading ? (
+            {(isFilteringLoading || isProductsLoading) ? (
               <div className={
                 viewMode === 'grid'
                   ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6'
@@ -403,7 +456,7 @@ export default function SearchPage() {
             )}
 
             {/* Pagination */}
-            {isFilteringLoading ? (
+            {(isFilteringLoading || isProductsLoading) ? (
               <div className="mt-12">
                 <PaginationSkeleton />
               </div>
@@ -552,7 +605,7 @@ export default function SearchPage() {
                 <div>
                   <CategorySidebar
                     categories={categoryTree}
-                    currentCategoryId=""
+                    currentCategoryId={filters.collectionId || ""}
                   />
                 </div>
 
@@ -562,7 +615,11 @@ export default function SearchPage() {
                     min={priceRange.min}
                     max={priceRange.max}
                     value={currentPriceRange}
-                    onChange={(value) => updatePriceRange(value[0], value[1], priceRange.min, priceRange.max)}
+                    onChange={(value) => {
+                      setIsProductsLoading(true)
+                      updatePriceRange(value[0], value[1], priceRange.min, priceRange.max)
+                      setTimeout(() => setIsProductsLoading(false), 800)
+                    }}
                     step={1000}
                   />
                 </div>

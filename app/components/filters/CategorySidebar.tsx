@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { Link } from '@remix-run/react'
 
 export interface CategoryNode {
@@ -80,7 +80,7 @@ function CategoryItem({
 
           {/* Category Name and Count */}
           <Link
-            to={`/collections/${category.slug}`}
+            to={`/search?collectionId=${category.id}`}
             className="flex items-center justify-between flex-1 min-w-0 group"
           >
             <span className={`text-sm truncate group-hover:text-red-600 transition-colors ${
@@ -121,9 +121,47 @@ export default function CategorySidebar({
   currentCategoryId,
   className = ''
 }: CategorySidebarProps) {
+
+  // Function to find if a category contains the current category (for expansion)
+  const findParentCategories = (categories: CategoryNode[], targetId: string): string[] => {
+    const parents: string[] = []
+
+    function traverse(cats: CategoryNode[], currentParents: string[]) {
+      for (const cat of cats) {
+        if (cat.id === targetId) {
+          parents.push(...currentParents)
+          return true
+        }
+        if (cat.children && cat.children.length > 0) {
+          if (traverse(cat.children, [...currentParents, cat.id])) {
+            return true
+          }
+        }
+      }
+      return false
+    }
+
+    traverse(categories, [])
+    return parents
+  }
+
+  // Auto-expand categories that contain the current selection
+  const parentCategories = currentCategoryId ? findParentCategories(categories, currentCategoryId) : []
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
-    new Set(['computers', 'gaming', 'home-appliances']) // Pre-expand some categories
+    new Set([...parentCategories, 'computers', 'gaming', 'home-appliances']) // Pre-expand some categories + parents of current
   )
+
+  // Update expanded categories when currentCategoryId changes
+  React.useEffect(() => {
+    if (currentCategoryId) {
+      const newParents = findParentCategories(categories, currentCategoryId)
+      setExpandedCategories(prev => {
+        const newSet = new Set(prev)
+        newParents.forEach(parentId => newSet.add(parentId))
+        return newSet
+      })
+    }
+  }, [currentCategoryId, categories])
 
   const toggleCategory = (categoryId: string) => {
     setExpandedCategories(prev => {
