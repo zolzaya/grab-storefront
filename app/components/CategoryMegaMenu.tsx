@@ -212,7 +212,7 @@ export function CategoryMegaMenu({ isOpen, onClose }: CategoryMegaMenuProps) {
                   <button
                     type="button"
                     onClick={onClose}
-                    className="relative rounded-full bg-gray-600 text-white hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-white p-2 shadow-lg"
+                    className="relative rounded-full bg-white text-black focus:outline-none focus:ring-2 focus:ring-white p-2 shadow-lg"
                   >
                     <span className="absolute -inset-2.5" />
                     <span className="sr-only">Close panel</span>
@@ -239,11 +239,10 @@ export function CategoryMegaMenu({ isOpen, onClose }: CategoryMegaMenuProps) {
                           key={category.id}
                           onMouseEnter={() => setSelectedCategory(category)}
                           onClick={() => setSelectedCategory(category)}
-                          className={`w-full text-left px-4 py-4 flex items-center transition-all duration-200 border-l-4 ${
-                            selectedCategory.id === category.id
-                              ? 'bg-red-50 border-red-500 text-red-700'
-                              : 'border-transparent text-gray-700 hover:bg-gray-100'
-                          }`}
+                          className={`w-full text-left px-4 py-4 flex items-center transition-all duration-200 border-l-4 ${selectedCategory.id === category.id
+                            ? 'bg-red-50 border-red-500 text-red-700'
+                            : 'border-transparent text-gray-700 hover:bg-gray-100'
+                            }`}
                         >
                           <span className="text-lg mr-3">{category.icon}</span>
                           <div className="flex-1">
