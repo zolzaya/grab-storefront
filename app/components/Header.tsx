@@ -2,6 +2,7 @@ import { Link, Form } from '@remix-run/react'
 import { Order, CurrentUser } from '~/lib/types'
 import { useState, useEffect } from 'react'
 import { getFullName } from '~/lib/auth'
+import { CategoryMegaMenu } from './CategoryMegaMenu'
 
 interface HeaderProps {
   activeOrder?: Order | null
@@ -14,6 +15,7 @@ export function Header({ activeOrder, user }: HeaderProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+  const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -65,6 +67,13 @@ export function Header({ activeOrder, user }: HeaderProps) {
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center space-x-1">
+              <button
+                onClick={() => setIsCategoryMenuOpen(true)}
+                className="px-6 py-2 bg-red-500 text-white font-medium rounded-xl hover:bg-red-600 transition-all duration-200 shadow-sm flex items-center"
+              >
+                <span className="mr-2">☰</span>
+                Ангилал
+              </button>
               <Link
                 to="/products"
                 className="px-4 py-2 text-neutral-700 hover:text-neutral-900 font-medium rounded-xl hover:bg-neutral-50 transition-all duration-200"
@@ -245,6 +254,16 @@ export function Header({ activeOrder, user }: HeaderProps) {
               </button>
             </div>
             <nav className="p-6 space-y-4">
+              <button
+                onClick={() => {
+                  setIsMobileMenuOpen(false)
+                  setIsCategoryMenuOpen(true)
+                }}
+                className="w-full px-4 py-3 bg-red-500 text-white hover:bg-red-600 rounded-xl transition-all duration-200 font-medium text-center flex items-center justify-center"
+              >
+                <span className="mr-2">☰</span>
+                Ангилал
+              </button>
               <Link
                 to="/products"
                 className="block px-4 py-3 text-neutral-700 hover:text-neutral-900 hover:bg-neutral-50 rounded-xl transition-all duration-200 font-medium"
@@ -327,6 +346,12 @@ export function Header({ activeOrder, user }: HeaderProps) {
           </div>
         </div>
       )}
+
+      {/* Category Mega Menu */}
+      <CategoryMegaMenu
+        isOpen={isCategoryMenuOpen}
+        onClose={() => setIsCategoryMenuOpen(false)}
+      />
     </>
   )
 }
