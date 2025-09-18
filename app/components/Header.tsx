@@ -74,24 +74,6 @@ export function Header({ activeOrder, user }: HeaderProps) {
                 <span className="mr-2">☰</span>
                 Ангилал
               </button>
-              <Link
-                to="/products"
-                className="px-4 py-2 text-neutral-700 hover:text-neutral-900 font-medium rounded-xl hover:bg-neutral-50 transition-all duration-200"
-              >
-                Catalog
-              </Link>
-              <Link
-                to="/collections"
-                className="px-4 py-2 text-neutral-700 hover:text-neutral-900 font-medium rounded-xl hover:bg-neutral-50 transition-all duration-200"
-              >
-                Collections
-              </Link>
-              <Link
-                to="/about"
-                className="px-4 py-2 text-neutral-700 hover:text-neutral-900 font-medium rounded-xl hover:bg-neutral-50 transition-all duration-200"
-              >
-                About
-              </Link>
             </nav>
 
             {/* Right side icons */}
@@ -129,7 +111,7 @@ export function Header({ activeOrder, user }: HeaderProps) {
                         <p className="text-sm font-semibold text-neutral-900">{getFullName(user)}</p>
                         <p className="text-xs text-neutral-600">{user.emailAddress}</p>
                       </div>
-                      
+
                       <div className="py-2">
                         <Link
                           to="/account"
@@ -141,7 +123,7 @@ export function Header({ activeOrder, user }: HeaderProps) {
                           </svg>
                           My Account
                         </Link>
-                        
+
                         <Link
                           to="/account/orders"
                           className="flex items-center px-4 py-2 text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 transition-colors duration-200"
