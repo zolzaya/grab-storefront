@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Swiper CSS */
+@import 'swiper/css';
+@import 'swiper/css/navigation';
+@import 'swiper/css/pagination';
+@import 'swiper/css/autoplay';
+@import 'swiper/css/free-mode';
+
 html,
 body {
   @apply bg-white dark:bg-gray-950;
@@ -9,4 +16,136 @@ body {
   @media (prefers-color-scheme: dark) {
     color-scheme: dark;
   }
+}
+
+/* Custom animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Hide scrollbars for horizontal scroll */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
+/* Custom Swiper Styles */
+.swiper-pagination-bullet {
+  width: 8px !important;
+  height: 8px !important;
+  background: #9ca3af !important;
+  opacity: 1 !important;
+}
+
+.swiper-pagination-bullet-active {
+  background: #ef4444 !important;
+}
+
+.hero-pagination .swiper-pagination-bullet {
+  margin: 0 4px !important;
+}
+
+.featured-pagination .swiper-pagination-bullet {
+  margin: 0 4px !important;
+}
+
+/* Hero Swiper Styles */
+.hero-swiper {
+  height: 500px !important;
+  width: 100% !important;
+}
+
+.hero-swiper .swiper-slide {
+  height: 500px !important;
+  width: 100% !important;
+  flex-shrink: 0 !important;
+}
+
+.hero-swiper .swiper-wrapper {
+  height: 500px !important;
+}
+
+.hero-pagination .swiper-pagination-bullet {
+  margin: 0 4px !important;
+  background: rgba(255, 255, 255, 0.7) !important;
+  width: 12px !important;
+  height: 12px !important;
+}
+
+.hero-pagination .swiper-pagination-bullet-active {
+  background: #ef4444 !important;
+}
+
+/* Fix Swiper slide visibility and transitions */
+.swiper-slide {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.swiper-wrapper {
+  display: flex !important;
+}
+
+/* Ensure proper sizing for all swiper containers */
+.swiper {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Force single slide display for hero banner */
+.hero-swiper .swiper-slide:not(.swiper-slide-active) {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.hero-swiper .swiper-slide-active {
+  opacity: 1 !important;
+  position: relative !important;
+  z-index: 10 !important;
+}
+
+/* Featured products swiper specific styles */
+.featured-products-swiper {
+  height: 100% !important;
+}
+
+.featured-products-swiper .swiper-slide {
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* Sale products swiper specific styles */
+.sale-products-swiper .swiper-slide {
+  width: auto !important;
+  flex-shrink: 0 !important;
+}
+
+/* Horizontal products swiper specific styles */
+.horizontal-products-swiper {
+  height: 100% !important;
+  width: 100% !important;
+  overflow: hidden !important;
+}
+
+.horizontal-products-swiper .swiper-wrapper {
+  height: 100% !important;
+}
+
+.horizontal-products-swiper .swiper-slide {
+  height: 100% !important;
+  width: 100% !important;
+  flex-shrink: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
