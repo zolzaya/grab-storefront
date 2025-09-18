@@ -38,6 +38,18 @@ This is a modern ecommerce storefront built with Remix, designed to integrate se
 - `npm run test:coverage`: Run tests with coverage report
 - `npx vitest run path/to/test.test.tsx`: Run a single test file
 
+## Build Configuration
+
+**Vite Configuration (vite.config.ts):**
+- Uses Remix with Vite as the build tool
+- Remix future flags enabled: v3_fetcherPersist, v3_relativeSplatPath, v3_throwAbortReason, v3_singleFetch, v3_lazyRouteDiscovery
+- TypeScript path mapping with vite-tsconfig-paths
+
+**Test Configuration (vitest.config.ts):**
+- Vitest with jsdom environment for component testing
+- Global test setup in `tests/setup.ts`
+- Path alias `~` mapped to `./app` directory for imports
+
 ## Project Structure
 
 ```
@@ -245,10 +257,13 @@ tests/
 - Test new features with unit and integration tests
 
 ### GraphQL Best Practices
-- Use the centralized `shopApiRequest` function for all API calls
+- Use the centralized `shopApiRequest` function for all API calls (app/lib/graphql.ts:29)
 - Always handle GraphQL errors with user-friendly messages
 - Forward request cookies for server-side API calls
 - Type all GraphQL responses using the types in `lib/types.ts`
+- Use `shopApiRequestCached()` for cacheable queries with 5-minute TTL
+- Use `shopApiRequestFresh()` to bypass cache when needed
+- Automatic cookie forwarding maintains session state for cart and auth
 
 ### Component Development
 - Follow the established design system with Tailwind classes
@@ -455,3 +470,15 @@ account/
 ### Task Execution
 - Do what has been asked; nothing more, nothing less
 - Focus on the specific requirements without adding unnecessary features
+
+### Code Quality Requirements
+- Run `npm run lint` and `npm run typecheck` before suggesting completion of tasks
+- Follow existing patterns and conventions in the codebase
+- Use TypeScript interfaces and proper error handling
+- Test new functionality using the established test patterns in `tests/`
+
+### Session and State Management Notes
+- All cart operations require cookie forwarding for session persistence
+- User authentication state is managed through root loader (app/root.tsx:32)
+- GraphQL client automatically handles server/client request differences
+- Active order and user data loaded in parallel for optimal performance
