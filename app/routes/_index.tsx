@@ -2,6 +2,7 @@ import type { MetaFunction, LoaderFunctionArgs } from "@remix-run/node"
 import { useLoaderData, Link } from "@remix-run/react"
 import { CategoryIcon, featuredCategories } from "~/components/CategoryIcon"
 import { BannerGrid } from "~/components/BannerGrid"
+import { ProductSlider } from "~/components/ProductSlider"
 import { shopApiRequest } from "~/lib/graphql"
 import { GET_PRODUCTS } from "~/lib/queries"
 import { ProductList } from "~/lib/types"
@@ -54,8 +55,15 @@ export default function Index() {
       {/* Banner Grid Section */}
       <BannerGrid />
 
-      {/* Modern Featured Products Section */}
-
+      {/* Fast Delivery Products Section */}
+      <ProductSlider
+        products={featuredProducts.items}
+        title="Get it as fast as an hour"
+        subtitle="Your faves, straight to your door."
+        viewAllLink="/products"
+        titleClassName="text-2xl font-bold text-gray-900"
+        sectionClassName="py-6 bg-white"
+      />
 
       {/* Featured Categories Section */}
       <section className="py-20 bg-gray-50">

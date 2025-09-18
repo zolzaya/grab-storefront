@@ -140,11 +140,6 @@ function BannerCard({ item }: { item: BannerItem }) {
 
       {/* Placeholder content area */}
       <div className="absolute inset-0 flex items-center justify-center opacity-20">
-        <div className="w-16 h-16 bg-gray-400 rounded-lg flex items-center justify-center">
-          <svg className="w-8 h-8 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-          </svg>
-        </div>
       </div>
 
       {/* Content overlay */}
@@ -174,7 +169,7 @@ function BannerCard({ item }: { item: BannerItem }) {
 export function BannerGrid() {
   return (
     <section className="py-12 bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-10xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 grid-rows-4">
           {bannerItems.map((item) => (
             <BannerCard key={item.id} item={item} />
